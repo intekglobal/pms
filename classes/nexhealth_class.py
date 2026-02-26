@@ -1,7 +1,4 @@
-# from inspect import isfunction
-
 import requests
-from lib.nexhealth_configs import nexhealth_config
 from fastapi import HTTPException
 from pydantic import BaseModel
 from starlette.status import HTTP_401_UNAUTHORIZED
@@ -20,30 +17,12 @@ from lib.utilities import generate_pms_patients
 from settings import Settings
 from .nexhealth import NexHealthPatient
 
-# from ehr_abs_class import PMSPatient
-
 settings = Settings()
-
-
-class NexhealthConfiguration(BaseModel):
-    institution_name: str
-    location_id: int
-
-
-class NexHealthConfiguration(BaseModel):
-    institution_name: str
-    location_id: int
 
 
 class NexHealthGetPatientsResponse(BaseModel):
     count: int
     data: Sequence[NexHealthPatient]
-
-
-OPEN_DENTAL_LOCATION_ID = 341387
-EAGLESOFT_LOCATION_ID = 341396
-eaglesoft_tenant_id = "eaglesoft tenant ID"
-open_dental__tenant_id = "open_dental tenant ID"
 
 
 def stringify_bool(arg: bool) -> Literal["false", "true"]:
@@ -96,14 +75,6 @@ class NexHealthSDK(PMSAbstractBaseClass):
         if location_id:
             url = f"{url}&location_id={location_id}"
         return url
-
-    @staticmethod
-    def __retrieve_configuration(location_id: str, tenant_id: str):
-        # TO-DO: Use `location_id` and `tenant_id` to get `institution_name` and
-        # `location_id` (`Nexhealth`'s location ID)
-        institution = nexhealth_config[tenant_id]
-        configuration = institution[location_id]
-        return configuration
 
     @classmethod
     def create_appointment(
@@ -313,25 +284,12 @@ class NexHealthSDK(PMSAbstractBaseClass):
         email: str,
         first_name: str,
         last_name: str,
-        location_id: str,
+        location_id: int,
         phone_number: str,
         provider_id: int,
-        tenant_id: str,
+        subdomain: str,
     ):
-        # if isfunction(cls._NexhealthSDK__generate_url):
-        #     print(
-        #         f"**** cls._NexhealthSDK__generate_url: {cls._NexhealthSDK__generate_url}"
-        #     )
-        #     generated_url = cls._NexhealthSDK__generate_url(
-        #         location_id=configuration.location_id,
-        #         path="/patient",
-        #         subdomain=configuration.subdomain,
-        #     )
-        #     print(f"generated url: {generated_url}")
-
         # TO-DO: Validate whether the customer already exists
-
-        configuration = cls.__retrieve_configuration(location_id, tenant_id)
         headers = cls.generate_headers(post_call=True)
         data = {
             "patient": {
@@ -348,9 +306,9 @@ class NexHealthSDK(PMSAbstractBaseClass):
             },
         }
         generated_url = cls.__generate_url(
-            location_id=configuration.location_id,
+            location_id=location_id,
             path="/patients",
-            subdomain=configuration.subdomain,
+            subdomain=subdomain,
         )
         create_patient_response = requests.post(
             generated_url, json=data, headers=headers
@@ -466,9 +424,6 @@ class NexHealthSDK(PMSAbstractBaseClass):
         )
 
         if get_appointment_descriptors_response_status_code != 200:
-            # print(
-            #     f"Error retrieving appointment descriptors; response status code: {get_appointment_descriptors_response_status_code}, response: {get_appointment_descriptors_response_data}"
-            # )
             print("Error retrieving appointment descriptors")
             print(
                 f"Response status code: {get_appointment_descriptors_response_status_code}"
@@ -734,146 +689,3 @@ class NexHealthSDK(PMSAbstractBaseClass):
             f"location appointment descriptors response data: {location_appointment_descriptors_response_data}"
         )
         return location_appointment_descriptors_response_data["data"]
-
-
-# def fetch_appointments
-
-
-# response = requests.get(url, headers=headers)
-
-
-if __name__ == "__main__":
-    # OpenDental
-    open_dental__configuration = nexhealth_config[open_dental__tenant_id]["location ID"]
-
-    # NexHealthSDK.get_appointment(
-    #     id=1292580815,
-    #     include=["patient"],
-    #     subdomain=open_dental__configuration.subdomain,
-    # )
-    NexHealthSDK.get_patients(
-        configuration=NexHealthConfig(
-            location_id=open_dental__configuration.location_id,
-            subdomain=open_dental__configuration.subdomain,
-        ),
-        date_of_birth="2015-05-01",
-        # date_of_birth="1985-11-05",
-        # date_of_birth="1995-01-10",  # new created patient
-        # date_of_birth="1985-03-13",
-        # location_id=open_dental__configuration.location_id,
-        # location_id="location ID",
-        # phone_number=7777777777,  # new created patient
-        # phone_number=3106582656,
-        # subdomain=open_dental__configuration.subdomain,
-        # tenant_id=open_dental__tenant_id,
-    )
-    # NexhealthSDK.get_appointment_types(
-    #     include=["descriptors"],
-    #     location_id=open_dental__configuration.location_id,
-    #     subdomain=open_dental__configuration.subdomain,
-    # )
-    # NexhealthSDK.get_operatories(
-    #     location_id=open_dental__configuration.location_id,
-    #     subdomain=open_dental__configuration.subdomain,
-    # )
-    # NexHealthSDK.create_appointment(
-    #     location_id=open_dental__configuration.location_id,
-    #     operatory_id=236809,
-    #     patient_id=457359421,
-    #     provider_id=453819214,
-    #     # start_time="2026-04-12T13:00:00-0700",
-    #     # start_time="2026-04-13T13:00:00-0700",
-    #     start_time="2026-04-13T09:00:00-0700",
-    #     subdomain=open_dental__configuration.subdomain,
-    # )
-    # NexhealthSDK.create_appointment_type(
-    #     # emr_appt_descriptor_ids=[30559468, 30558647],
-    #     emr_appt_descriptor_ids=[30559468, 30558650],
-    #     location_id=open_dental__configuration.location_id,
-    #     minutes=30,
-    #     name="Appointment type location scoped test 3",
-    #     parent_type="Location",
-    #     subdomain=open_dental__configuration.subdomain,
-    # )
-    # NexhealthSDK.create_availability(
-    #     # active=False,
-    #     # appointment_type_ids=[2],
-    #     appointment_type_ids=[1159419],
-    #     begin_time="09:00",
-    #     days=["Monday", "Thursday"],
-    #     end_time="11:00",
-    #     location_id=open_dental__configuration.location_id,
-    #     operatory_id=236809,
-    #     provider_id=453819214,
-    #     # specific_date="2029-10-01",
-    #     subdomain=open_dental__configuration.subdomain,
-    # )
-    # NexhealthSDK.get_location_appointment_descriptors(
-    #     nexhealth_config[open_dental__tenant_id]["location ID"].location_id,
-    #     "Opendental Appointment Types",
-    # )
-    # NexhealthSDK.get_appointment_descriptors(
-    #     appointment_id=1,
-    #     subdomain=nexhealth_config[open_dental__tenant_id]["location ID"].subdomain,
-    # )
-    # NexhealthSDK.get_providers(
-    #     location_id=open_dental__configuration.location_id,
-    #     # per_page=1,
-    #     # requestable=False,
-    #     subdomain=open_dental__configuration.subdomain,
-    # )
-    # print(
-    #     NexhealthSDK.create_patient(
-    #         date_of_birth="1995-01-10",
-    #         email="asher_norris@example.com",
-    #         first_name="Asher",
-    #         last_name="Norris",
-    #         location_id="location ID",
-    #         phone_number="7777777777",
-    #         provider_id=453819212,
-    #         tenant_id=open_dental__tenant_id,
-    #     )
-    # )
-    # Eaglesoft
-    # print(
-    #     NexhealthSDK.get_patients(
-    #         tenant_id=eaglesoft_tenant_id,
-    #         date_of_birth="2000-01-10",
-    #         location_id="location ID",
-    #         phone_number=5555555555,
-    #     )
-    # )
-    # print(
-    #     NexhealthSDK.create_patient(
-    #         tenant_id=eaglesoft_tenant_id,
-    #         # date_of_birth="2000-01-10",
-    #         location_id="location ID",
-    #         # phone_number=5555555555,
-    #     )
-    # )
-    # print(
-    #     NexhealthSDK.get_providers(
-    #         location_id="location ID",
-    #         per_page=1,
-    #         requestable=False,
-    #         tenant_id=eaglesoft_tenant_id,
-    #     )
-    # )
-    # view_appointments(
-    #     end="2026-04-04T09:15:00.000-06:00",
-    #     institution_name='sibatel',
-    #     location_id=341396,
-    #     start="2026-04-04T09:00:00.000-06:00",
-    # )
-    # create_appointment(
-    #     end_time="2026-04-04T09:15:00.000-06:00",
-    #     # end_time="2026-04-03T09:15:00.000-06:00",
-    #     institution_name='sibatel',
-    #     location_id=341396,
-    #     operatory_id=236933,
-    #     patient_id=454239172,
-    #     provider_id=454098474,
-    #     start_time="2026-04-04T09:00:00.000-06:00",
-    #     # start_time="2026-04-03T09:00:00.000-06:00",
-    # )
-    # get_access_token()
