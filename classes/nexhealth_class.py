@@ -16,10 +16,13 @@ from ehr_abs_class import GetPatientsResponse
 from ehr_abs_class import NexHealthConfig
 from ehr_abs_class import PER_PAGE
 from ehr_abs_class import PMSAbstractBaseClass
-from .nexhealth import NexHealthPatient
 from lib.utilities import generate_pms_patients
+from settings import Settings
+from .nexhealth import NexHealthPatient
 
 # from ehr_abs_class import PMSPatient
+
+settings = Settings()
 
 
 class NexhealthConfiguration(BaseModel):
@@ -40,7 +43,6 @@ class NexHealthGetPatientsResponse(BaseModel):
 OPEN_DENTAL_LOCATION_ID = 341387
 EAGLESOFT_LOCATION_ID = 341396
 eaglesoft_tenant_id = "eaglesoft tenant ID"
-nexhealth_url = "https://nexhealth.info"
 open_dental__tenant_id = "open_dental tenant ID"
 
 
@@ -52,11 +54,12 @@ class NexHealthSDK(PMSAbstractBaseClass):
     @staticmethod
     def __get_access_token() -> str:
         headers = {
-            "Authorization": "dXNlci0xMTQ5LXByb2R1Y3Rpb24.Uc5pDQH28o9Dp-MzPol6Q8DUu4gZJjwO",
+            "Authorization": settings.nexhealth_api_key,
             "Accept": "application/vnd.Nexhealth+json;version=2",
         }
         access_token_response = requests.post(
-            f"{nexhealth_url}/authenticates", headers=headers
+            f"{settings.nexhealth_url}/authenticates",
+            headers=headers,
         )
 
         if access_token_response.status_code == 401:
@@ -88,7 +91,7 @@ class NexHealthSDK(PMSAbstractBaseClass):
 
     @staticmethod
     def __generate_url(*, location_id: int | None = None, path: str, subdomain: str):
-        url = f"{nexhealth_url}{path}?subdomain={subdomain}"
+        url = f"{settings.nexhealth_url}{path}?subdomain={subdomain}"
 
         if location_id:
             url = f"{url}&location_id={location_id}"
@@ -702,7 +705,9 @@ class NexHealthSDK(PMSAbstractBaseClass):
     def get_location_appointment_descriptors(
         cls, location_id: int, descriptor_type: str | None = None
     ):
-        url = f"{nexhealth_url}/locations/{location_id}/appointment_descriptors"
+        url = (
+            f"{settings.nexhealth_url}/locations/{location_id}/appointment_descriptors"
+        )
 
         if descriptor_type:
             url = f"{url}?descriptor_type={descriptor_type}"
