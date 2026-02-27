@@ -558,7 +558,6 @@ class NexHealthSDK(PMSAbstractBaseClass):
         phone_number: int | str | None = None,
         subdomain: str,
     ) -> NexHealthGetPatientsResponse:
-        # headers = cls.generate_headers(beta_api=True)
         headers = cls.generate_headers()
         generated_url = cls.__generate_url(
             location_id=location_id,
@@ -579,9 +578,6 @@ class NexHealthSDK(PMSAbstractBaseClass):
         if include is not None:
             for value in include:
                 url = f"{url}&include[]={value}"
-            print(f"url: {url}")
-
-        print(f"url: {url}")
 
         fetch_patients_response = requests.get(url, headers=headers)
         fetch_patients_response_status_code = fetch_patients_response.status_code
@@ -606,13 +602,13 @@ class NexHealthSDK(PMSAbstractBaseClass):
     def get_patients(
         cls,
         *,
+        configuration: NexHealthConfig,
         date_of_birth: str | None = None,
         inactive: bool = False,
         include: Sequence[Literal["adjustments"]] | None = None,
         non_patient: bool = False,
         per_page: int = PER_PAGE,
-        phone_number: int | str | None = None,
-        configuration: NexHealthConfig,
+        phone_number: str | None = None,
     ) -> GetPatientsResponse:
         nexhealth_get_patients_response = cls.__get_patients(
             date_of_birth=date_of_birth,

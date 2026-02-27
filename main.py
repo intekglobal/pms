@@ -82,7 +82,7 @@ async def create_appointment(
 
 
 @app.post("/patients")
-async def get_patients(
+async def retrieve_patients(
     body: Request,
     date_of_birth: str | None = None,
     per_page: int = PER_PAGE,
