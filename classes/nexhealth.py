@@ -41,7 +41,7 @@ class NexHealthAppointment(BaseModel):
     foreign_id: str
     foreign_id_type: str
     patient_confirmed: bool
-    created_by_user_id: int
+    created_by_user_id: int | None
     is_guardian: bool
     operatory_id: int
     timezone_offset: str
