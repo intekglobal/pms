@@ -15,9 +15,15 @@ from ehr_abs_class import PER_PAGE
 from ehr_abs_class import PMSAbstractBaseClass
 from lib.utilities import generate_pms_patients
 from settings import Settings
+from .nexhealth import NexHealthAppointment
 from .nexhealth import NexHealthPatient
 
 settings = Settings()
+
+
+class NexHealthGetAppointmentsResponse(BaseModel):
+    count: int
+    data: Sequence[NexHealthAppointment]
 
 
 class NexHealthGetPatientsResponse(BaseModel):
@@ -384,7 +390,13 @@ class NexHealthSDK(PMSAbstractBaseClass):
             print("Error retrieving appointments")
             print(f"Response status code: {get_appointments_response_status_code}")
 
-            if get_appointments_response_status_code in [400, 401, 403, 404, 500]:
+            if get_appointments_response_status_code in [
+                400,
+                401,
+                403,
+                404,
+                500,
+            ]:
                 print(f"Response data: {get_appointments_response_data}")
                 print(f"Error: {get_appointments_response_data['error'][0]}")
             else:
@@ -394,7 +406,10 @@ class NexHealthSDK(PMSAbstractBaseClass):
                 status_code=HTTP_400_BAD_REQUEST,
             )
         print(f"get appointments response data: {get_appointments_response_data}")
-        return get_appointments_response_data["data"]
+        return NexHealthGetAppointmentsResponse(
+            count=get_appointments_response_data["count"],
+            data=get_appointments_response_data["data"],
+        )
 
     @classmethod
     def get_appointment_descriptors(

@@ -21,6 +21,32 @@ class Bio(BaseModel):
     previous_foreign_id: str | None = None
 
 
+class NexHealthAppointment(BaseModel):
+    id: int
+    patient_id: int
+    provider_id: int
+    provider_name: str
+    start_time: str
+    confirmed: bool
+    patient_missed: bool
+    created_at: str
+    updated_at: str
+    note: str
+    end_time: str
+    unavailable: bool
+    cancelled: bool
+    timezone: str
+    institution_id: int
+    location_id: int
+    foreign_id: str
+    foreign_id_type: str
+    patient_confirmed: bool
+    created_by_user_id: int
+    is_guardian: bool
+    operatory_id: int
+    timezone_offset: str
+
+
 class NexHealthPatient(BaseModel):
     id: int
     email: str | None = None
