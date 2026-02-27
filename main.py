@@ -37,7 +37,7 @@ async def cancel_appointment(body: Request, id: int):
     return patch_appointment_response
 
 
-@app.post("/appointments")
+@app.post("/create_appointment")
 async def create_appointment(
     configuration: RequestConfiguration,
     data: CreateAppointmentData,
@@ -51,7 +51,7 @@ async def create_appointment(
     appointment_result = NexHealthSDK.create_appointment(
         configuration=params,
         operatory_id=data["operatory_id"],
-        patient_id=data["operatory_id"],
+        patient_id=data["patient_id"],
         provider_id=data["provider_id"],
         start_time=data["start_time"],
     )
