@@ -687,3 +687,63 @@ class NexHealthSDK(PMSAbstractBaseClass):
             f"location appointment descriptors response data: {location_appointment_descriptors_response_data}"
         )
         return location_appointment_descriptors_response_data["data"]
+
+    @classmethod
+    def patch_appointment(
+        cls,
+        *,
+        cancel: bool | None = None,
+        check_in_at: str | None = None,
+        configuration: NexHealthConfig,
+        confirm: Literal[True] | None = None,
+        id: int,
+    ):
+        if cancel is None and check_in_at is None and (confirm is None or not confirm):
+            print("Error: no patch was action provided")
+            raise HTTPException(HTTP_400_BAD_REQUEST, "Error processing appointment")
+
+        headers = cls.generate_headers(post_call=True)
+        generated_url = cls.__generate_url(
+            path=f"/appointments/{id}", subdomain=configuration.subdomain
+        )
+
+        # explicitly typed to avoid typing errors
+        appt: Dict
+
+        if cancel is not None:
+            appt = {
+                "cancelled": cancel,
+            }
+        elif confirm:
+            appt = {
+                "confirmed": confirm,
+            }
+        else:
+            # because of the above validation, it can be safely assumed `check_in_at`
+            # is a string
+            appt = {
+                "checkin_at": check_in_at,
+            }
+
+        data = {
+            "appt": appt,
+        }
+        patch_appointment_response = requests.patch(
+            generated_url, headers=headers, json=data
+        )
+        patch_appointment_response_data = patch_appointment_response.json()
+        patch_appointment_response_status_code = patch_appointment_response.status_code
+
+        if patch_appointment_response_status_code != 200:
+            print("Error patching appointment")
+            print(f"Response status code: {patch_appointment_response_status_code}")
+
+            if patch_appointment_response_status_code in [400, 401, 403, 404, 500]:
+                print(f"Response data: {patch_appointment_response_data}")
+                print(f"Error: {patch_appointment_response_data['error'][0]}")
+            else:
+                print(f"Error: {patch_appointment_response_data}")
+            raise HTTPException(HTTP_400_BAD_REQUEST, "Error processing appointment")
+
+        print(f"path appointment response data: {patch_appointment_response_data}")
+        return patch_appointment_response_data["data"]["appt"]

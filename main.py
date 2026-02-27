@@ -20,6 +20,23 @@ class CreateAppointmentData(TypedDict):
     start_time: str
 
 
+@app.post("/cancel_appointment/{id}")
+async def cancel_appointment(body: Request, id: int):
+    configuration = body.configuration
+    params = configuration.params
+
+    # TODO: Enable `Local` configuration
+    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+        raise HTTPException(
+            HTTP_400_BAD_REQUEST, "Configuration type currently not supported"
+        )
+
+    patch_appointment_response = NexHealthSDK.patch_appointment(
+        cancel=True, configuration=params, id=id
+    )
+    return patch_appointment_response
+
+
 @app.post("/appointments")
 async def create_appointment(
     configuration: RequestConfiguration,
