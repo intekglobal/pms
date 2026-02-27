@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi import HTTPException
+from pydantic import BaseModel
 from starlette.status import HTTP_400_BAD_REQUEST
 from typing import TypedDict
 
@@ -18,6 +19,15 @@ class CreateAppointmentData(TypedDict):
     patient_id: int
     provider_id: int
     start_time: str
+
+
+class CreatePatientData(BaseModel):
+    date_of_birth: str
+    email: str
+    first_name: str
+    last_name: str
+    phone_number: str
+    provider_id: int
 
 
 @app.post("/appointments")
@@ -79,6 +89,26 @@ async def create_appointment(
         start_time=data["start_time"],
     )
     return appointment_result
+
+
+@app.post("/create_patient")
+async def create_patient(configuration: RequestConfiguration, data: CreatePatientData):
+    params = configuration.params
+
+    # TODO: Enable `Local` configuration
+    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+        raise HTTPException(HTTP_400_BAD_REQUEST, "Incorrect configuration")
+
+    create_patient_response = NexHealthSDK.create_patient(
+        configuration=params,
+        date_of_birth=data.date_of_birth,
+        email=data.email,
+        first_name=data.first_name,
+        last_name=data.last_name,
+        phone_number=data.phone_number,
+        provider_id=data.provider_id,
+    )
+    return create_patient_response
 
 
 @app.post("/patients")

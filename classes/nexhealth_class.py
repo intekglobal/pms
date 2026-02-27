@@ -285,16 +285,26 @@ class NexHealthSDK(PMSAbstractBaseClass):
     def create_patient(
         cls,
         *,
+        configuration: NexHealthConfig,
         date_of_birth: str,
         email: str,
         first_name: str,
         last_name: str,
-        location_id: int,
         phone_number: str,
         provider_id: int,
-        subdomain: str,
     ):
-        # TO-DO: Validate whether the customer already exists
+        # Validate first that the patient does not already exist
+        get_patients_response = cls.get_patients(
+            configuration=configuration,
+            date_of_birth=date_of_birth,
+            phone_number=phone_number,
+        )
+
+        if get_patients_response.count:
+            print("Error creating patient, client already exists")
+            print(f"Patients data: {get_patients_response}")
+            raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating patient")
+
         headers = cls.generate_headers(post_call=True)
         data = {
             "patient": {
@@ -311,21 +321,34 @@ class NexHealthSDK(PMSAbstractBaseClass):
             },
         }
         generated_url = cls.__generate_url(
-            location_id=location_id,
+            location_id=configuration.location_id,
             path="/patients",
-            subdomain=subdomain,
+            subdomain=configuration.subdomain,
         )
         create_patient_response = requests.post(
             generated_url, json=data, headers=headers
         )
-        create_patient_response_status_code = create_patient_response.status_code
         create_patient_response_data = create_patient_response.json()
+        create_patient_response_status_code = create_patient_response.status_code
 
         if create_patient_response_status_code != 201:
-            print(f"Error creating patient: {create_patient_response_data}")
+            print("Error creating patient")
+            print(f"Response status code: {create_patient_response_status_code}")
+
+            if create_patient_response_status_code in [
+                400,
+                401,
+                403,
+                404,
+                500,
+            ]:
+                print(f"Response data: {create_patient_response_data}")
+                print(f"Error: {create_patient_response_data['error'][0]}")
+            else:
+                print(f"Error: {create_patient_response_data}")
             raise HTTPException(
                 detail="Error creating patient",
-                status_code=create_patient_response_status_code,
+                status_code=HTTP_400_BAD_REQUEST,
             )
         return create_patient_response_data["data"]["user"]
 
