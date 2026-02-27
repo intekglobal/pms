@@ -5,6 +5,10 @@ from typing import Literal
 from typing import Sequence
 from typing import TypedDict
 
+# Local imports
+from classes.request import LocalParams
+from classes.request import NexHealthParams
+
 PER_PAGE = 300
 
 
@@ -26,14 +30,8 @@ class GetPatientsResponse(TypedDict):
     data: Sequence[PMSPatient]
 
 
-class LocalConfig(BaseModel):
-    location_id: str
-    tenant_id: str
-
-
-class NexHealthConfig(BaseModel):
-    location_id: int
-    subdomain: str
+type LocalConfig = LocalParams
+type NexHealthConfig = NexHealthParams
 
 
 class PMSAbstractBaseClass(metaclass=ABCMeta):
@@ -44,12 +42,9 @@ class PMSAbstractBaseClass(metaclass=ABCMeta):
         *,
         configuration: NexHealthConfig | LocalConfig,
         date_of_birth: str | None = None,
-        # location_id: str,
         per_page: int = PER_PAGE,
         phone_number: int | str | None = None,
-        # tenant_id: str,
     ) -> GetPatientsResponse:
-        # ) -> Sequence[PMSPatient]:
         return {
             "count": 0,
             "data": [],
