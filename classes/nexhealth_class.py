@@ -80,14 +80,13 @@ class NexHealthSDK(PMSAbstractBaseClass):
     def create_appointment(
         cls,
         *,
+        configuration: NexHealthConfig,
         end_time: str | None = None,
-        location_id: int,
         notify_patient: bool | None = None,
         operatory_id: int,
         patient_id: int,
         provider_id: int,
         start_time: str,  # HH:mm
-        subdomain: str,
     ):
         headers = cls.generate_headers(post_call=True)
         appt = {
@@ -100,9 +99,9 @@ class NexHealthSDK(PMSAbstractBaseClass):
             "appt": appt,
         }
         generated_url = cls.__generate_url(
-            location_id=location_id,
+            location_id=configuration.location_id,
             path="/appointments",
-            subdomain=subdomain,
+            subdomain=configuration.subdomain,
         )
         url = generated_url
 
@@ -594,8 +593,7 @@ class NexHealthSDK(PMSAbstractBaseClass):
         *,
         date_of_birth: str | None = None,
         inactive: bool = False,
-        include: Sequence[Literal["adjustments"]] | None = ["adjustments"],
-        # include: Sequence[Literal["adjustments"]] | None = None,
+        include: Sequence[Literal["adjustments"]] | None = None,
         non_patient: bool = False,
         per_page: int = PER_PAGE,
         phone_number: int | str | None = None,
