@@ -3,7 +3,6 @@ from abc import abstractmethod
 from pydantic import BaseModel
 from typing import Literal
 from typing import Sequence
-from typing import TypedDict
 
 # Local imports
 from classes.request import LocalParams
@@ -25,7 +24,7 @@ class PMSPatient(BaseModel):
     work_phone: str
 
 
-class GetPatientsResponse(TypedDict):
+class GetPatientsResponse(BaseModel):
     count: int
     data: Sequence[PMSPatient]
 
@@ -43,9 +42,9 @@ class PMSAbstractBaseClass(metaclass=ABCMeta):
         configuration: NexHealthConfig | LocalConfig,
         date_of_birth: str | None = None,
         per_page: int = PER_PAGE,
-        phone_number: int | str | None = None,
+        phone_number: str | None = None,
     ) -> GetPatientsResponse:
-        return {
-            "count": 0,
-            "data": [],
-        }
+        return GetPatientsResponse(
+            count=0,
+            data=[],
+        )

@@ -9,7 +9,6 @@ class Bio(BaseModel):
     gender: Literal["Female", "Male"] | None = "Female"
     zip_code: int | None = None
     new_patient: bool
-    # non_patient: bool
     phone_number: str
     date_of_birth: str
     address_line_1: str = ""
@@ -49,30 +48,19 @@ class NexHealthAppointment(BaseModel):
 
 class NexHealthPatient(BaseModel):
     id: int
-    email: str | None = None
+    email: str | None
     first_name: str
     middle_name: str | None = None
     last_name: str
     name: str
     created_at: str
     updated_at: str
-    # institution_id: int
-    # foreign_id: int | None = None
-    # foreign_id_type: Literal['nex'] | str
+    institution_id: int
+    foreign_id: str | None
+    foreign_id_type: str | Literal["nex"]
     bio: Bio
     inactive: bool
-    last_sync_time: str
-    # guarantor_id: str | None = None
-    # unsubscribe_sms: bool
-    # balance: {
-    #     "amount": "0.00",
-    #     "currency": "USD"
-    # }
-    # billing_type: str
-    # # billing_type: "Standard"
-    # chart_id: str | None = None
-    # preferred_language: str
-    # # preferred_language: "en"
-    # preferred_locale: str | None = None
+    last_sync_time: str | None
+    preferred_language: str | None
     location_ids: Sequence[int]
     provider_id: int
