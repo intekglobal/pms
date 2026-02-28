@@ -106,6 +106,7 @@ async def create_patient(configuration: RequestConfiguration, data: CreatePatien
 async def retrieve_patients(
     configuration: Annotated[RequestConfiguration, Body()],
     date_of_birth: str | None = None,
+    legacy_format: bool = True,
     per_page: int = PER_PAGE,
     phone_number: str | None = None,
 ):
@@ -120,6 +121,7 @@ async def retrieve_patients(
         date_of_birth=date_of_birth,
         per_page=per_page,
         phone_number=phone_number,
+        use_legacy_format=legacy_format,
     )
     return patients
 

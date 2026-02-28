@@ -1,6 +1,5 @@
 import requests
 from fastapi import HTTPException
-from pydantic import BaseModel
 from starlette.status import HTTP_401_UNAUTHORIZED
 from starlette.status import HTTP_400_BAD_REQUEST
 from typing import Dict
@@ -9,26 +8,18 @@ from typing import Mapping
 from typing import Sequence
 
 # local modules
-from ehr_abs_class import GetPatientsResponse
 from ehr_abs_class import NexHealthConfig
 from ehr_abs_class import PER_PAGE
 from ehr_abs_class import PMSAbstractBaseClass
 from lib.utilities import generate_pms_patients
 from settings import Settings
 from .nexhealth import NexHealthAppointment
-from .nexhealth import NexHealthPatient
+from .request import GetPatientsResponse
+from .request import NexHealthGetAppointmentsResponse
+from .request import NexHealthGetPatientsResponse
+from .request import NexHealthParams
 
 settings = Settings()
-
-
-class NexHealthGetAppointmentsResponse(BaseModel):
-    count: int
-    data: Sequence[NexHealthAppointment]
-
-
-class NexHealthGetPatientsResponse(BaseModel):
-    count: int
-    data: Sequence[NexHealthPatient]
 
 
 def stringify_bool(arg: bool) -> Literal["false", "true"]:
@@ -621,6 +612,7 @@ class NexHealthSDK(PMSAbstractBaseClass):
         non_patient: bool = False,
         per_page: int = PER_PAGE,
         phone_number: str | None = None,
+        use_legacy_format: bool = True,
     ) -> GetPatientsResponse:
         nexhealth_get_patients_response = cls.__get_patients(
             date_of_birth=date_of_birth,
@@ -632,9 +624,14 @@ class NexHealthSDK(PMSAbstractBaseClass):
             phone_number=phone_number,
             subdomain=configuration.subdomain,
         )
-        pms_patients = generate_pms_patients(nexhealth_get_patients_response.data)
+        nexhealth_get_patients_response_data = nexhealth_get_patients_response.data
+
+        if use_legacy_format:
+            patients = generate_pms_patients(nexhealth_get_patients_response_data)
+        else:
+            patients = nexhealth_get_patients_response_data
         return GetPatientsResponse(
-            count=nexhealth_get_patients_response.count, data=pms_patients
+            count=nexhealth_get_patients_response.count, data=patients
         )
 
     @classmethod
