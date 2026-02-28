@@ -1,6 +1,8 @@
 from typing import Sequence
+
+# Local packages
 from classes.nexhealth import NexHealthPatient
-from ehr_abs_class import PMSPatient
+from classes.pms import PMSPatient
 
 
 def generate_pms_patient(nexhealth_patient: NexHealthPatient):
