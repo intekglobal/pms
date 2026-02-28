@@ -8,7 +8,10 @@ class LocalParams(BaseModel):
 
 
 class NexHealthParams(BaseModel):
+    email: str
     location_id: int
+    operatory_id: int
+    provider_id: int
     subdomain: str
 
 
