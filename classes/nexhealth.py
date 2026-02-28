@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Literal
 from typing import Sequence
+from typing import TypedDict
 
 
 class Bio(BaseModel):
@@ -20,7 +21,7 @@ class Bio(BaseModel):
     previous_foreign_id: str | None = None
 
 
-class NexHealthAppointment(BaseModel):
+class NexHealthAppointment(TypedDict):
     id: int
     patient_id: int
     provider_id: int
@@ -34,6 +35,7 @@ class NexHealthAppointment(BaseModel):
     end_time: str
     unavailable: bool
     cancelled: bool
+    cancelled_at: str | None
     timezone: str
     institution_id: int
     location_id: int

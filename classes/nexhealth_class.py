@@ -734,7 +734,7 @@ class NexHealthSDK(PMSAbstractBaseClass):
         configuration: NexHealthConfig,
         confirm: Literal[True] | None = None,
         id: int,
-    ):
+    ) -> NexHealthAppointment:
         if cancel is None and check_in_at is None and (confirm is None or not confirm):
             print("Error: no patch was action provided")
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error processing appointment")
