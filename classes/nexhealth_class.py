@@ -394,9 +394,11 @@ class NexHealthSDK(PMSAbstractBaseClass):
     def get_appointments(
         cls,
         *,
-        end: str,
-        start: str,
         configuration: NexHealthConfig,
+        end: str,
+        patient_id: int | None = None,
+        per_page: int = PER_PAGE,
+        start: str,
     ):
         headers = cls.generate_headers()
         generated_url = cls.__generate_url(
@@ -404,7 +406,11 @@ class NexHealthSDK(PMSAbstractBaseClass):
             path="/appointments",
             subdomain=configuration.subdomain,
         )
-        url = f"{generated_url}&end={end}&start={start}"
+        url = f"{generated_url}&end={end}&start={start}&per_page={per_page}"
+
+        if patient_id is not None:
+            url = f"{url}&patient_id={patient_id}"
+
         get_appointments_response = requests.get(url, headers=headers)
         get_appointments_response_data = get_appointments_response.json()
         get_appointments_response_status_code = get_appointments_response.status_code
