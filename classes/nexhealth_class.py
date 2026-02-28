@@ -71,7 +71,6 @@ class NexHealthSDK(PMSAbstractBaseClass):
             headers.update({"Nex-Api-Version": "v20240412"})
         if post_call:
             headers.update({"Content-Type": "application/json"})
-            # headers["Content-Type"] = "application/json"
         return headers
 
     @staticmethod
@@ -130,7 +129,6 @@ class NexHealthSDK(PMSAbstractBaseClass):
                 print(f"Error: {create_appointment_response_data['error'][0]}")
             else:
                 print(f"Error: {create_appointment_response_data}")
-            # print(f"Error: {create_appointment_response.text}")
             raise HTTPException(
                 detail="Error creating appointment",
                 status_code=HTTP_400_BAD_REQUEST,
@@ -153,7 +151,6 @@ class NexHealthSDK(PMSAbstractBaseClass):
         subdomain: str,
     ):
         headers = cls.generate_headers(post_call=True)
-        print(f"headers: {headers}")
         generated_url = cls.__generate_url(
             path="/appointment_types", subdomain=subdomain
         )
@@ -166,7 +163,6 @@ class NexHealthSDK(PMSAbstractBaseClass):
         data: Dict = {"appointment_type": appointment_type}
 
         if parent_type == "Location":
-            # data.update({"location_id": location_id})
             appointment_type.update(
                 {
                     "parent_id": location_id,
@@ -178,7 +174,6 @@ class NexHealthSDK(PMSAbstractBaseClass):
                     "location_id": location_id,
                 }
             )
-            print(f"data: {data}")
 
         create_appointment_type_response = requests.post(
             generated_url, headers=headers, json=data
@@ -250,13 +245,10 @@ class NexHealthSDK(PMSAbstractBaseClass):
         # if active != None:
         if active is not None:
             availability.update({"active": active})
-            print(f"Availability object: {availability}")
         if appointment_type_ids:
             availability.update({"appointment_type_ids": appointment_type_ids})
-            print(f"Availability object: {availability}")
         if specific_date:
             availability.update({"specific_date": specific_date})
-            print(f"availability: {availability}")
 
         create_availability_response = requests.post(
             generated_url, headers=headers, json=data
@@ -350,7 +342,6 @@ class NexHealthSDK(PMSAbstractBaseClass):
         return create_patient_response_data["data"]["user"]
 
     @classmethod
-    # def get_appointmen(cls, *, id: int, location_id: int, subdomain: str):
     def get_appointment(
         cls,
         *,
@@ -359,7 +350,6 @@ class NexHealthSDK(PMSAbstractBaseClass):
         subdomain: str,
     ):
         headers = cls.generate_headers()
-        # generated_url = cls.__generate_url(location_id=location_id, path=f"/appointments/{id}", subdomain=subdomain)
         generated_url = cls.__generate_url(
             path=f"/appointments/{id}", subdomain=subdomain
         )
@@ -368,7 +358,6 @@ class NexHealthSDK(PMSAbstractBaseClass):
         if include:
             for value in include:
                 url = f"{url}&include[]={value}"
-            print(f"url: {url}")
 
         get_appointment_response = requests.get(generated_url, headers=headers)
         get_appointment_response_data = get_appointment_response.json()
@@ -577,7 +566,6 @@ class NexHealthSDK(PMSAbstractBaseClass):
         date_of_birth: str | None = None,
         inactive: bool = False,
         include: Sequence[Literal["adjustments"]] | None = None,
-        # include: Sequence[Literal["adjustments"]] | None = None,
         non_patient: bool | None,
         location_id: int,
         per_page: int = PER_PAGE,
@@ -592,8 +580,6 @@ class NexHealthSDK(PMSAbstractBaseClass):
         )
         url = f"{generated_url}&per_page={per_page}"
         url = f"{url}&inactive={stringify_bool(inactive)}"
-
-        print(f"Headers: {headers}")
 
         if date_of_birth:
             url = f"{url}&date_of_birth={date_of_birth}"
