@@ -18,7 +18,3 @@ class NexHealthParams(BaseModel):
 class RequestConfiguration(BaseModel):
     type: Literal["Local", "NexHealth"]
     params: NexHealthParams | LocalParams
-
-
-class Request(BaseModel):
-    configuration: RequestConfiguration
