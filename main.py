@@ -13,6 +13,7 @@ from classes.request import RequestConfiguration
 from ehr_abs_class import PER_PAGE
 
 app = FastAPI()
+local_configuration_error_message = "Configuration type currently not supported"
 
 
 class CreatePatientData(BaseModel):
@@ -36,9 +37,7 @@ async def retrieve_appointments(
 
     # TODO: Enable `Local` configuration
     if configuration.type == "Local" or not isinstance(params, NexHealthParams):
-        raise HTTPException(
-            HTTP_400_BAD_REQUEST, "Configuration type currently not supported"
-        )
+        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
 
     get_appointments_response = NexHealthSDK.get_appointments(
         configuration=params,
@@ -57,9 +56,7 @@ async def cancel_appointment(body: Request, id: int):
 
     # TODO: Enable `Local` configuration
     if configuration.type == "Local" or not isinstance(params, NexHealthParams):
-        raise HTTPException(
-            HTTP_400_BAD_REQUEST, "Configuration type currently not supported"
-        )
+        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
 
     patch_appointment_response = NexHealthSDK.patch_appointment(
         cancel=True, configuration=params, id=id
@@ -77,7 +74,7 @@ async def create_appointment(
 
     # TODO: Enable `Local` configuration
     if configuration.type == "Local" or not isinstance(params, NexHealthParams):
-        raise HTTPException(HTTP_400_BAD_REQUEST, "Incorrect configuration")
+        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
 
     appointment_result = NexHealthSDK.create_appointment(
         configuration=params,
@@ -93,7 +90,7 @@ async def create_patient(configuration: RequestConfiguration, data: CreatePatien
 
     # TODO: Enable `Local` configuration
     if configuration.type == "Local" or not isinstance(params, NexHealthParams):
-        raise HTTPException(HTTP_400_BAD_REQUEST, "Incorrect configuration")
+        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
 
     create_patient_response = NexHealthSDK.create_patient(
         configuration=params,
@@ -118,7 +115,7 @@ async def retrieve_patients(
 
     # TODO: Enable `Local` configuration
     if configuration.type == "Local" or not isinstance(params, NexHealthParams):
-        raise HTTPException(HTTP_400_BAD_REQUEST, "Incorrect configuration")
+        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
 
     patients = NexHealthSDK.get_patients(
         configuration=params,
@@ -139,7 +136,7 @@ async def reschedule_appointment(
 
     # TODO: Enable `Local` configuration
     if configuration.type == "Local" or not isinstance(params, NexHealthParams):
-        raise HTTPException(HTTP_400_BAD_REQUEST, "Incorrect configuration")
+        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
 
     patch_appointment_response = NexHealthSDK.patch_appointment(
         cancel=True,
