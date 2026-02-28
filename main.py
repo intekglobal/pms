@@ -8,7 +8,6 @@ from typing import Annotated
 # Local import
 from classes.nexhealth_class import NexHealthSDK
 from classes.request import NexHealthParams
-from classes.request import Request
 from classes.request import RequestConfiguration
 from ehr_abs_class import PER_PAGE
 
@@ -26,13 +25,12 @@ class CreatePatientData(BaseModel):
 
 @app.post("/appointments")
 async def retrieve_appointments(
-    body: Request,
+    configuration: Annotated[RequestConfiguration, Body(embed=True)],
     end_date: str,
     start_date: str,
     patient_id: int | None = None,
     per_page: int = PER_PAGE,
 ):
-    configuration = body.configuration
     params = configuration.params
 
     # TODO: Enable `Local` configuration
@@ -50,8 +48,9 @@ async def retrieve_appointments(
 
 
 @app.post("/cancel_appointment/{id}")
-async def cancel_appointment(body: Request, id: int):
-    configuration = body.configuration
+async def cancel_appointment(
+    configuration: Annotated[RequestConfiguration, Body(embed=True)], id: int
+):
     params = configuration.params
 
     # TODO: Enable `Local` configuration
@@ -105,12 +104,11 @@ async def create_patient(configuration: RequestConfiguration, data: CreatePatien
 
 @app.post("/patients")
 async def retrieve_patients(
-    body: Request,
+    configuration: Annotated[RequestConfiguration, Body()],
     date_of_birth: str | None = None,
     per_page: int = PER_PAGE,
     phone_number: str | None = None,
 ):
-    configuration = body.configuration
     params = configuration.params
 
     # TODO: Enable `Local` configuration
