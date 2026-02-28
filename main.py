@@ -127,3 +127,28 @@ async def retrieve_patients(
         phone_number=phone_number,
     )
     return patients
+
+
+@app.post("/reschedule_appointment/{id}")
+async def reschedule_appointment(
+    configuration: Annotated[RequestConfiguration, Body()],
+    id: int,
+    start_time: Annotated[str, Body()],
+):
+    params = configuration.params
+
+    # TODO: Enable `Local` configuration
+    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+        raise HTTPException(HTTP_400_BAD_REQUEST, "Incorrect configuration")
+
+    patch_appointment_response = NexHealthSDK.patch_appointment(
+        cancel=True,
+        configuration=params,
+        id=id,
+    )
+    create_appointment_response = NexHealthSDK.create_appointment(
+        configuration=configuration,
+        patient_id=patch_appointment_response["patient_id"],
+        start_time=start_time,
+    )
+    return create_appointment_response
