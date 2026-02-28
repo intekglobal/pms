@@ -35,6 +35,8 @@ async def retrieve_appointments(
     body: Request,
     end_date: str,
     start_date: str,
+    patient_id: int | None = None,
+    per_page: int = PER_PAGE,
 ):
     configuration = body.configuration
     params = configuration.params
@@ -48,6 +50,8 @@ async def retrieve_appointments(
     get_appointments_response = NexHealthSDK.get_appointments(
         configuration=params,
         end=end_date,
+        patient_id=patient_id,
+        per_page=per_page,
         start=start_date,
     )
     return get_appointments_response
