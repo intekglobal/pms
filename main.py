@@ -1,8 +1,9 @@
+from fastapi import Body
 from fastapi import FastAPI
 from fastapi import HTTPException
 from pydantic import BaseModel
 from starlette.status import HTTP_400_BAD_REQUEST
-from typing import TypedDict
+from typing import Annotated
 
 # Local import
 from classes.nexhealth_class import NexHealthSDK
@@ -14,20 +15,12 @@ from ehr_abs_class import PER_PAGE
 app = FastAPI()
 
 
-class CreateAppointmentData(TypedDict):
-    operatory_id: int
-    patient_id: int
-    provider_id: int
-    start_time: str
-
-
 class CreatePatientData(BaseModel):
     date_of_birth: str
     email: str
     first_name: str
     last_name: str
     phone_number: str
-    provider_id: int
 
 
 @app.post("/appointments")
@@ -77,7 +70,8 @@ async def cancel_appointment(body: Request, id: int):
 @app.post("/create_appointment")
 async def create_appointment(
     configuration: RequestConfiguration,
-    data: CreateAppointmentData,
+    patient_id: Annotated[int, Body()],
+    start_time: Annotated[str, Body()],
 ):
     params = configuration.params
 
@@ -87,10 +81,8 @@ async def create_appointment(
 
     appointment_result = NexHealthSDK.create_appointment(
         configuration=params,
-        operatory_id=data["operatory_id"],
-        patient_id=data["patient_id"],
-        provider_id=data["provider_id"],
-        start_time=data["start_time"],
+        patient_id=patient_id,
+        start_time=start_time,
     )
     return appointment_result
 
@@ -110,7 +102,6 @@ async def create_patient(configuration: RequestConfiguration, data: CreatePatien
         first_name=data.first_name,
         last_name=data.last_name,
         phone_number=data.phone_number,
-        provider_id=data.provider_id,
     )
     return create_patient_response
 
