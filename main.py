@@ -6,7 +6,7 @@ from starlette.status import HTTP_400_BAD_REQUEST
 from typing import Annotated
 
 # Local import
-from classes.nexhealth_class import NexHealthSDK
+from classes.nexhealth_sdk import NexHealthSDK
 from classes.request import NexHealthParams
 from classes.request import RequestConfiguration
 from ehr_abs_class import PER_PAGE
