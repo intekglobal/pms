@@ -31,7 +31,7 @@ class NexHealthAppointment(TypedDict):
     patient_missed: bool
     created_at: str
     updated_at: str
-    note: str
+    note: str | None
     end_time: str
     unavailable: bool
     cancelled: bool
@@ -39,8 +39,8 @@ class NexHealthAppointment(TypedDict):
     timezone: str
     institution_id: int
     location_id: int
-    foreign_id: str
-    foreign_id_type: str
+    foreign_id: str | None
+    foreign_id_type: str | Literal["nex"]
     patient_confirmed: bool
     created_by_user_id: int | None
     is_guardian: bool
