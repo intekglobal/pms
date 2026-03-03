@@ -130,8 +130,8 @@ async def create_patient(
 
 
 @app.post("/patients")
-async def retrieve_patients(
-    configuration: Annotated[RequestConfiguration, Body()],
+async def get_patients(
+    configuration: Annotated[RequestConfiguration, Body(embed=True)],
     date_of_birth: str | None = None,
     legacy_format: bool = True,
     per_page: int = PER_PAGE,
