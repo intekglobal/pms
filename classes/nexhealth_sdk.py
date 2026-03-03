@@ -127,7 +127,7 @@ class NexHealthSDK(PMSAbstractBaseClass):
                 status_code=HTTP_400_BAD_REQUEST,
             )
         print(f"Create appointment response data: {create_appointment_response_data}")
-        return create_appointment_response_data["data"]
+        return create_appointment_response_data["data"]["appt"]
 
     @classmethod
     def create_appointment_type(
