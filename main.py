@@ -179,7 +179,7 @@ async def reschedule_appointment(
         id=id,
     )
     create_appointment_response = NexHealthSDK.create_appointment(
-        configuration=configuration,
+        configuration=params,
         operatory_id=operatory_id,
         patient_id=patch_appointment_response["patient_id"],
         provider_id=c_provider_id,
