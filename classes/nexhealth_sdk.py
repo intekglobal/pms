@@ -79,14 +79,16 @@ class NexHealthSDK(PMSAbstractBaseClass):
         configuration: NexHealthConfig,
         end_time: str | None = None,
         notify_patient: bool | None = None,
+        operatory_id: int,
         patient_id: int,
+        provider_id: int,
         start_time: str,  # HH:mm
     ):
         headers = cls.generate_headers(post_call=True)
         appt = {
-            "operatory_id": configuration.operatory_id,
+            "operatory_id": operatory_id,
             "patient_id": patient_id,
-            "provider_id": configuration.provider_id,
+            "provider_id": provider_id,
             "start_time": start_time,
         }
         data = {
@@ -272,6 +274,7 @@ class NexHealthSDK(PMSAbstractBaseClass):
         first_name: str,
         last_name: str,
         phone_number: str,
+        provider_id: int,
     ):
         # Validate first that the patient does not already exist
         get_patients_response = cls.get_patients(
@@ -297,7 +300,7 @@ class NexHealthSDK(PMSAbstractBaseClass):
                 },
             },
             "provider": {
-                "provider_id": configuration.provider_id,
+                "provider_id": provider_id,
             },
         }
         generated_url = cls.__generate_url(
