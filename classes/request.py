@@ -29,10 +29,9 @@ class NexHealthGetPatientsResponse(BaseModel):
 
 
 class NexHealthParams(BaseModel):
-    email: str
+    default_patient_email: str | None = None
+    default_provider_id: int | None = None
     location_id: int
-    operatory_id: int
-    provider_id: int
     subdomain: str
 
 
