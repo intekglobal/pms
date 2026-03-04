@@ -5,12 +5,12 @@ from typing import Sequence
 # Local packages
 from .nexhealth import NexHealthAppointment
 from .nexhealth import NexHealthPatient
-from .pms import PMSPatient
+from .pms import Patient
 
 
 class GetPatientsResponse(BaseModel):
     count: int
-    data: Sequence[PMSPatient] | Sequence[NexHealthPatient]
+    data: Sequence[Patient] | Sequence[NexHealthPatient]
 
 
 class LocalParams(BaseModel):
