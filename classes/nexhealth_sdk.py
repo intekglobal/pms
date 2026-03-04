@@ -527,13 +527,14 @@ class NexHealthSDK(PMSAbstractBaseClass):
     def get_operatories(
         cls,
         *,
-        location_id: int,
+        configuration: NexHealthConfig,
         search_name: str | None = None,
-        subdomain: str,
     ):
         headers = cls.generate_headers()
         generated_url = cls.__generate_url(
-            location_id=location_id, path="/operatories", subdomain=subdomain
+            location_id=configuration.location_id,
+            path="/operatories",
+            subdomain=configuration.subdomain,
         )
         url = generated_url
 
@@ -645,16 +646,15 @@ class NexHealthSDK(PMSAbstractBaseClass):
     def get_providers(
         cls,
         *,
-        location_id: int,
+        configuration: NexHealthConfig,
         per_page: int = PER_PAGE,
         requestable: bool | None = None,
-        subdomain: str,
     ):
         headers = cls.generate_headers()
         generated_url = cls.__generate_url(
-            location_id=location_id,
+            location_id=configuration.location_id,
             path="/providers",
-            subdomain=subdomain,
+            subdomain=configuration.subdomain,
         )
         url = f"{generated_url}&per_page={per_page}"
 
