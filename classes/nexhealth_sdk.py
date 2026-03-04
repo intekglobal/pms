@@ -15,9 +15,10 @@ from lib.utilities import generate_pms_patient
 from lib.utilities import generate_pms_patients
 from settings import settings
 from .nexhealth import NexHealthAppointment
+from .nexhealth import NexHealthIncludePatientQuery
+from .nexhealth import NexHealthPatient
 from .request import GetPatientsResponse
 from .request import NexHealthGetAppointmentsResponse
-from .request import NexHealthGetPatientsResponse
 from .request import NexHealthParams
 
 
@@ -557,36 +558,60 @@ class NexHealthSDK(PMSAbstractBaseClass):
         return get_operatories_response_data["data"]
 
     @classmethod
-    def __get_patients(
+    def get_patients(
         cls,
         *,
+        appointment_date_end: str | None = None,
+        appointment_date_start: str | None = None,
+        configuration: NexHealthConfig,
         date_of_birth: str | None = None,
+        email: str | None = None,
+        foreign_id: str | None = None,
         inactive: bool = False,
-        include: Sequence[Literal["adjustments"]] | None = None,
-        non_patient: bool | None,
-        location_id: int,
+        include: NexHealthIncludePatientQuery | None = None,
+        location_strict: bool | None = None,  # defaults to `False` in `NexHealth`
+        name: str | None = None,
+        non_patient: bool = False,
+        page: int | None = None,
         per_page: int = PER_PAGE,
-        phone_number: int | str | None = None,
-        subdomain: str,
-    ) -> NexHealthGetPatientsResponse:
+        phone_number: str | None = None,
+        raw_response: bool = False,
+        updated_since: str | None = None,
+    ) -> GetPatientsResponse:
         headers = cls.generate_headers()
         generated_url = cls.__generate_url(
-            location_id=location_id,
+            location_id=configuration.location_id,
             path="/patients",
-            subdomain=subdomain,
+            subdomain=configuration.subdomain,
         )
         url = f"{generated_url}&per_page={per_page}"
         url = f"{url}&inactive={stringify_bool(inactive)}"
 
+        if appointment_date_end:
+            url = f"{url}&appointment_date_end={appointment_date_end}"
+        if appointment_date_start:
+            url = f"{url}&appointment_date_start={appointment_date_start}"
         if date_of_birth:
             url = f"{url}&date_of_birth={date_of_birth}"
-        if non_patient is not None:
-            url = f"{url}&non_patient={stringify_bool(non_patient)}"
-        if phone_number:
-            url = f"{url}&phone_number={phone_number}"
-        if include is not None:
+        if email:
+            url = f"{url}&email={email}"
+        if foreign_id:
+            url = f"{url}&foreign_id={foreign_id}"
+        if include:
             for value in include:
                 url = f"{url}&include[]={value}"
+        if location_strict is not None:
+            url = f"{url}&location_strict={stringify_bool(location_strict)}"
+        if name:
+            url = f"{url}&name={name}"
+        if non_patient is not None:
+            url = f"{url}&non_patient={stringify_bool(non_patient)}"
+        if page:
+            url = f"{url}&page={page}"
+        if phone_number:
+            url = f"{url}&phone_number={phone_number}"
+        if updated_since:
+            url = f"{url}&updated_since={updated_since}"
 
         fetch_patients_response = requests.get(url, headers=headers)
         fetch_patients_response_status_code = fetch_patients_response.status_code
@@ -595,49 +620,28 @@ class NexHealthSDK(PMSAbstractBaseClass):
         if fetch_patients_response_status_code != 200:
             print("Error retrieving patients")
             print(f"Response status code: {fetch_patients_response_status_code}")
-            print(f"Error: {fetch_patients_response_data}")
+
+            if fetch_patients_response_status_code in [400, 401, 403, 404, 500]:
+                print(f"Response data: {fetch_patients_response_data}")
+                print(f"Error: {fetch_patients_response_data['error'][0]}")
+            else:
+                print(f"Error: {fetch_patients_response_data}")
             raise HTTPException(
                 detail="Error retrieving patients",
                 status_code=HTTP_400_BAD_REQUEST,
             )
         print(f"fetch patients response data: {fetch_patients_response_data}")
-        nex_health_get_patients_response = NexHealthGetPatientsResponse(
-            count=fetch_patients_response_data["count"],
-            data=fetch_patients_response_data["data"]["patients"],
-        )
-        return nex_health_get_patients_response
+        patients_data: Sequence[NexHealthPatient] = fetch_patients_response_data[
+            "data"
+        ]["patients"]
 
-    @classmethod
-    def get_patients(
-        cls,
-        *,
-        configuration: NexHealthConfig,
-        date_of_birth: str | None = None,
-        inactive: bool = False,
-        include: Sequence[Literal["adjustments"]] | None = None,
-        non_patient: bool = False,
-        per_page: int = PER_PAGE,
-        phone_number: str | None = None,
-        use_legacy_format: bool = True,
-    ) -> GetPatientsResponse:
-        nexhealth_get_patients_response = cls.__get_patients(
-            date_of_birth=date_of_birth,
-            inactive=inactive,
-            include=include,
-            non_patient=non_patient,
-            location_id=configuration.location_id,
-            per_page=per_page,
-            phone_number=phone_number,
-            subdomain=configuration.subdomain,
-        )
-        nexhealth_get_patients_response_data = nexhealth_get_patients_response.data
-
-        if use_legacy_format:
-            patients = generate_pms_patients(nexhealth_get_patients_response_data)
+        if raw_response:
+            patients = patients_data
         else:
-            patients = nexhealth_get_patients_response_data
+            patients = generate_pms_patients(patients_data)
         return GetPatientsResponse(
-            count=nexhealth_get_patients_response.count, data=patients
+            count=fetch_patients_response_data["count"],
+            data=patients,
         )
 
     @classmethod

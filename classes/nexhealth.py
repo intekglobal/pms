@@ -1,7 +1,14 @@
+from typing import Dict
 from typing import Literal
 from typing import NotRequired
 from typing import Sequence
 from typing import TypedDict
+
+type NexHealthIncludePatientQueryValue = Literal[
+    "adjustments",
+    "upcoming_appts",
+]
+type NexHealthIncludePatientQuery = Sequence[NexHealthIncludePatientQueryValue]
 
 
 class Bio(TypedDict):
@@ -10,6 +17,7 @@ class Bio(TypedDict):
     gender: NotRequired[Literal["Female", "Male"] | None]
     zip_code: NotRequired[int | None]
     new_patient: bool
+    non_patient: bool
     phone_number: str
     date_of_birth: str
     address_line_1: NotRequired[str]
@@ -49,6 +57,7 @@ class NexHealthAppointment(TypedDict):
 
 
 class NexHealthPatient(TypedDict):
+    adjustments: NotRequired[Sequence[Dict]]
     id: int
     email: str | None
     first_name: str
@@ -66,3 +75,4 @@ class NexHealthPatient(TypedDict):
     preferred_language: str | None
     location_ids: Sequence[int]
     provider_id: int
+    upcoming_appts: NotRequired[Sequence[Dict]]

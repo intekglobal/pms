@@ -23,11 +23,6 @@ class NexHealthGetAppointmentsResponse(BaseModel):
     data: Sequence[NexHealthAppointment]
 
 
-class NexHealthGetPatientsResponse(BaseModel):
-    count: int
-    data: Sequence[NexHealthPatient]
-
-
 class NexHealthParams(BaseModel):
     default_patient_email: str | None = None
     default_provider_id: int | None = None
