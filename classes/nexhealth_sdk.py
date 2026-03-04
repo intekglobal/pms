@@ -13,14 +13,12 @@ from ehr_abs_class import PER_PAGE
 from ehr_abs_class import PMSAbstractBaseClass
 from lib.utilities import generate_pms_patient
 from lib.utilities import generate_pms_patients
-from settings import Settings
+from settings import settings
 from .nexhealth import NexHealthAppointment
 from .request import GetPatientsResponse
 from .request import NexHealthGetAppointmentsResponse
 from .request import NexHealthGetPatientsResponse
 from .request import NexHealthParams
-
-settings = Settings()
 
 
 def stringify_bool(arg: bool) -> Literal["false", "true"]:
