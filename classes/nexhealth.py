@@ -62,6 +62,27 @@ class BaseNexHealthPatient(BaseBaseNexHealthPatient):
     location_ids: Sequence[int]
 
 
+class NexHealthFee(TypedDict):
+    amount: float
+    currency: str
+
+
+class NexHealthProcedure(TypedDict):
+    appointment_id: int | None
+    body_site: Dict | None
+    code: str
+    end_date: str | None
+    fee: NexHealthFee | None
+    id: int
+    location_id: int
+    name: str
+    patient_id: int
+    provider_id: int
+    start_date: str | None
+    status: str
+    updated_at: str
+
+
 class NexHealthAppointment(BaseNexHealthAppointment):
     patient_id: int
     confirmed_at: str | None
@@ -79,7 +100,7 @@ class NexHealthAppointment(BaseNexHealthAppointment):
     operatory: NotRequired[Dict | None]
     patient_confirmed: bool
     patient: NotRequired[BaseNexHealthPatient | None]
-    procedures: NotRequired[Sequence[Dict] | None]
+    procedures: NotRequired[Sequence[NexHealthProcedure] | None]
     created_by_user_id: int | None
     is_guardian: bool
     operatory_id: int | None
@@ -191,7 +212,7 @@ class NexHealthOperatory(TypedDict):
 
 class NexHealthPatient(BaseNexHealthPatient):
     adjustments: NotRequired[Sequence[Dict] | None]
-    procedures: NotRequired[Sequence[Dict] | None]
+    procedures: NotRequired[Sequence[NexHealthProcedure] | None]
     provider_id: int
     upcoming_appts: NotRequired[Sequence[BaseNexHealthAppointment] | None]
 

@@ -4,6 +4,9 @@ from pydantic import Field
 from typing import Dict
 from typing import Sequence
 
+# Local imports
+from classes.nexhealth import NexHealthProcedure
+
 
 class BaseAppointment(BaseModel):
     """
@@ -62,7 +65,7 @@ class Appointment(BaseAppointment):
     operatory_id: int | None
     patient: BasePatient | None
     patient_id: int
-    procedures: Sequence[Dict] | None = None
+    procedures: Sequence[NexHealthProcedure] | None = None
     provider_id: int
 
 
@@ -72,7 +75,7 @@ class Patient(BasePatient):
     """
 
     adjustments: Sequence[Dict] | None = None
-    procedures: Sequence[Dict] | None = None
+    procedures: Sequence[NexHealthProcedure] | None = None
     provider_id: int
     upcoming_appointments: Sequence[BaseAppointment] | None = Field(
         default=None,
