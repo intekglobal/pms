@@ -186,3 +186,27 @@ async def reschedule_appointment(
         start_time=start_time,
     )
     return create_appointment_response
+
+@app.post("/procedures")
+async def get_procedures(
+    configuration: Annotated[RequestConfiguration, Body(embed=True)],
+    updated_after: str,
+    provider_id: int | None = None,
+    patient_id: int | None = None,
+    appointment_id: int | None = None,
+    per_page: int = PER_PAGE,
+):
+    params = configuration.params
+
+    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+
+    procedures = NexHealthSDK.get_procedures(
+        configuration=params,
+        updated_after=updated_after,
+        provider_id=provider_id,
+        patient_id=patient_id,
+        appointment_id=appointment_id,
+        per_page=per_page,
+    )
+    return procedures

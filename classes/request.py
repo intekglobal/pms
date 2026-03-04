@@ -5,6 +5,7 @@ from typing import Sequence
 # Local packages
 from .nexhealth import NexHealthAppointment
 from .nexhealth import NexHealthPatient
+from .nexhealth import NexHealthProcedure
 from .pms import PMSPatient
 
 
@@ -26,6 +27,11 @@ class NexHealthGetAppointmentsResponse(BaseModel):
 class NexHealthGetPatientsResponse(BaseModel):
     count: int
     data: Sequence[NexHealthPatient]
+
+
+class NexHealthGetProceduresResponse(BaseModel):
+    count: int
+    data: Sequence[NexHealthProcedure]
 
 
 class NexHealthParams(BaseModel):

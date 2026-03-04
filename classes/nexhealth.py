@@ -66,3 +66,24 @@ class NexHealthPatient(BaseModel):
     preferred_language: str | None
     location_ids: Sequence[int]
     provider_id: int
+
+
+class Fee(BaseModel):
+    amount: float
+    currency: str
+
+
+class NexHealthProcedure(TypedDict):
+    id: int
+    location_id: int
+    patient_id: int
+    provider_id: int
+    appointment_id: int | None
+    code: str
+    name: str
+    status: str
+    updated_at: str
+    body_site: dict | None
+    fee: Fee | None
+    start_date: str | None
+    end_date: str | None
