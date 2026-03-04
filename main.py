@@ -1,14 +1,17 @@
 from fastapi import Body
+from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
 from starlette.status import HTTP_400_BAD_REQUEST
 from typing import Annotated
+from typing import Literal
 
 # Local import
 from classes.nexhealth_sdk import NexHealthSDK
 from classes.request import NexHealthParams
 from classes.request import RequestConfiguration
 from ehr_abs_class import PER_PAGE
+from lib.requests_utilities import validate_app_key
 
 app = FastAPI()
 bad_request_message = "Bad request; please check your call and then try again"
@@ -20,6 +23,7 @@ async def retrieve_appointments(
     configuration: Annotated[RequestConfiguration, Body(embed=True)],
     end_date: str,
     start_date: str,
+    x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
     patient_id: int | None = None,
     per_page: int = PER_PAGE,
 ):
@@ -41,7 +45,9 @@ async def retrieve_appointments(
 
 @app.post("/cancel_appointment/{id}")
 async def cancel_appointment(
-    configuration: Annotated[RequestConfiguration, Body(embed=True)], id: int
+    configuration: Annotated[RequestConfiguration, Body(embed=True)],
+    id: int,
+    x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
 ):
     params = configuration.params
 
@@ -61,6 +67,7 @@ async def create_appointment(
     operatory_id: Annotated[int, Body()],
     patient_id: Annotated[int, Body()],
     start_time: Annotated[str, Body()],
+    x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
     provider_id: Annotated[int | None, Body()] = None,
 ):
     params = configuration.params
@@ -96,6 +103,7 @@ async def create_patient(
     first_name: Annotated[str, Body()],
     last_name: Annotated[str, Body()],
     phone_number: Annotated[str, Body()],
+    x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
     email: Annotated[str | None, Body()] = None,
     provider_id: Annotated[int | None, Body()] = None,
 ):
@@ -132,6 +140,7 @@ async def create_patient(
 @app.post("/operatories")
 async def get_operatories(
     configuration: Annotated[RequestConfiguration, Body(embed=True)],
+    x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
 ):
     params = configuration.params
 
@@ -146,6 +155,7 @@ async def get_operatories(
 @app.post("/patients")
 async def get_patients(
     configuration: Annotated[RequestConfiguration, Body(embed=True)],
+    x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
     date_of_birth: str | None = None,
     legacy_format: bool = True,
     per_page: int = PER_PAGE,
@@ -170,6 +180,7 @@ async def get_patients(
 @app.post("/providers")
 async def get_providers(
     configuration: Annotated[RequestConfiguration, Body(embed=True)],
+    x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
 ):
     params = configuration.params
 
@@ -187,6 +198,7 @@ async def reschedule_appointment(
     id: int,
     operatory_id: Annotated[int, Body()],
     start_time: Annotated[str, Body()],
+    x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
     provider_id: Annotated[int | None, Body()] = None,
 ):
     params = configuration.params
