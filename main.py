@@ -2,11 +2,14 @@ from fastapi import Body
 from fastapi import Depends
 from fastapi import FastAPI
 from fastapi import HTTPException
+from fastapi import Query
 from starlette.status import HTTP_400_BAD_REQUEST
 from typing import Annotated
 from typing import Literal
+from typing import Sequence
 
 # Local import
+from classes.nexhealth import NexHealthIncludePatientQueryValue
 from classes.nexhealth_sdk import NexHealthSDK
 from classes.request import NexHealthParams
 from classes.request import RequestConfiguration
@@ -156,10 +159,24 @@ async def get_operatories(
 async def get_patients(
     configuration: Annotated[RequestConfiguration, Body(embed=True)],
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
+    appointment_date_end: str | None = None,
+    appointment_date_start: str | None = None,
     date_of_birth: str | None = None,
-    legacy_format: bool = True,
+    email: str | None = None,
+    foreign_id: str | None = None,
+    inactive: bool = False,
+    include: Annotated[
+        Sequence[NexHealthIncludePatientQueryValue] | None,
+        Query(),
+    ] = None,
+    name: str | None = None,
+    non_patient: bool = False,
+    location_strict: bool | None = None,
+    page: int | None = None,
     per_page: int = PER_PAGE,
     phone_number: str | None = None,
+    raw_response: bool = False,
+    updated_since: str | None = None,
 ):
     params = configuration.params
 
@@ -168,11 +185,22 @@ async def get_patients(
         raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
 
     patients = NexHealthSDK.get_patients(
+        appointment_date_end=appointment_date_end,
+        appointment_date_start=appointment_date_start,
         configuration=params,
         date_of_birth=date_of_birth,
+        email=email,
+        foreign_id=foreign_id,
+        inactive=inactive,
+        include=include,
+        location_strict=location_strict,
+        name=name,
+        non_patient=non_patient,
+        page=page,
         per_page=per_page,
         phone_number=phone_number,
-        use_legacy_format=legacy_format,
+        raw_response=raw_response,
+        updated_since=updated_since,
     )
     return patients
 
