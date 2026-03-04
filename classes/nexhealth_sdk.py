@@ -597,7 +597,7 @@ class NexHealthSDK(PMSAbstractBaseClass):
                 detail="Error retrieving patients",
                 status_code=HTTP_400_BAD_REQUEST,
             )
-        print(f"fetch patients response data: {fetch_patients_response_data}")
+        #print(f"fetch patients response data: {fetch_patients_response_data}")
         nex_health_get_patients_response = NexHealthGetPatientsResponse(
             count=fetch_patients_response_data["count"],
             data=fetch_patients_response_data["data"]["patients"],
@@ -611,7 +611,7 @@ class NexHealthSDK(PMSAbstractBaseClass):
         configuration: NexHealthConfig,
         date_of_birth: str | None = None,
         inactive: bool = False,
-        include: Sequence[Literal["adjustments"]] | None = None,
+        include: Sequence[Literal["adjustments", "procedures", "upcoming_appts"]] | None = None,
         non_patient: bool = False,
         per_page: int = PER_PAGE,
         phone_number: str | None = None,

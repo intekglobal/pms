@@ -6,7 +6,7 @@ from typing import Annotated
 
 # Local import
 from classes.nexhealth_sdk import NexHealthSDK
-from classes.request import NexHealthParams
+from classes.request import GetPatientsResponse, NexHealthParams
 from classes.request import RequestConfiguration
 from ehr_abs_class import PER_PAGE
 
@@ -136,7 +136,7 @@ async def get_patients(
     legacy_format: bool = True,
     per_page: int = PER_PAGE,
     phone_number: str | None = None,
-):
+)-> GetPatientsResponse:
     params = configuration.params
 
     # TODO: Enable `Local` configuration
@@ -161,6 +161,10 @@ async def reschedule_appointment(
     start_time: Annotated[str, Body()],
     provider_id: Annotated[int | None, Body()] = None,
 ):
+    """ 
+    Reschedules an appointment by first cancelling the existing appointment and then creating a new one with the provided details. 
+    If provider_id is not provided, it will use the default provider ID from the configuration.
+    """
     params = configuration.params
 
     # TODO: Enable `Local` configuration
@@ -187,6 +191,7 @@ async def reschedule_appointment(
     )
     return create_appointment_response
 
+#--- WIP Endpoints for Recalls ---#
 @app.post("/procedures")
 async def get_procedures(
     configuration: Annotated[RequestConfiguration, Body(embed=True)],
@@ -196,6 +201,9 @@ async def get_procedures(
     appointment_id: int | None = None,
     per_page: int = PER_PAGE,
 ):
+    """
+    Returns procedures that have been updated after the provided timestamp. Can be filtered by provider, patient, or appointment.
+    """
     params = configuration.params
 
     if configuration.type == "Local" or not isinstance(params, NexHealthParams):
@@ -210,3 +218,56 @@ async def get_procedures(
         per_page=per_page,
     )
     return procedures
+
+#--- WIP Endpoints for Recalls ---#
+@app.post("/patient_by_procedures")
+async def get_patient_by_procedures(
+    configuration: Annotated[RequestConfiguration, Body(embed=True)],
+    procedure_ids: list[str],
+    per_page: int = PER_PAGE,
+    status: str | None = None,
+)-> GetPatientsResponse:
+    """
+    Returns patients that have had procedures updated after the provided timestamp. Can be filtered by provider, patient, 
+    or appointment.
+    """
+    params = configuration.params
+
+    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+
+    patients_data = NexHealthSDK.get_patients(
+        configuration=params,
+        include=["procedures", "upcoming_appts"], 
+        per_page=per_page,
+        use_legacy_format=False
+        ) 
+
+    patients = patients_data.data
+    print(f"Total patients retrieved: {patients_data.count}")
+
+    patients_with_procedure = []
+    for patient in patients:
+        if len(patient.procedures) > 0:
+            print(f"Patient {patient.id} - {patient.first_name} {patient.last_name} has {len(patient.procedures)} procedures")
+            patients_with_procedure.append(patient)
+    
+    print(f"Patients with at least one procedure: {len(patients_with_procedure)}")
+    
+    patients_with_code = []
+
+    for patient in patients_with_procedure:
+        for procedure in patient.procedures:
+            if procedure["code"] in procedure_ids:
+                if status is None or procedure['status'] == status:
+                    patients_with_code.append(patient)
+                    break
+    
+    count = len(patients_with_code)
+    print(f"Patients with specified procedure codes: {count}")
+    for patient in patients_with_code:
+        print(f"Patient {patient.id} - {patient.first_name} {patient.last_name}")
+
+    return GetPatientsResponse(
+        count=count,
+        data=patients_with_code)

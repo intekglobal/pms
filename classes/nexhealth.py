@@ -47,27 +47,6 @@ class NexHealthAppointment(TypedDict):
     operatory_id: int | None
     timezone_offset: str
 
-
-class NexHealthPatient(BaseModel):
-    id: int
-    email: str | None
-    first_name: str
-    middle_name: str | None = None
-    last_name: str
-    name: str
-    created_at: str
-    updated_at: str
-    institution_id: int
-    foreign_id: str | None
-    foreign_id_type: str | Literal["nex"]
-    bio: Bio
-    inactive: bool
-    last_sync_time: str | None
-    preferred_language: str | None
-    location_ids: Sequence[int]
-    provider_id: int
-
-
 class Fee(BaseModel):
     amount: float
     currency: str
@@ -87,3 +66,27 @@ class NexHealthProcedure(TypedDict):
     fee: Fee | None
     start_date: str | None
     end_date: str | None
+
+
+class NexHealthPatient(BaseModel):
+    id: int
+    email: str | None
+    first_name: str
+    middle_name: str | None = None
+    last_name: str
+    name: str
+    created_at: str
+    updated_at: str
+    institution_id: int
+    foreign_id: str | None
+    foreign_id_type: str | Literal["nex"]
+    bio: Bio
+    inactive: bool
+    last_sync_time: str | None
+    preferred_language: str | None
+    location_ids: Sequence[int]
+    procedures: Sequence[NexHealthProcedure] | None
+    # upcoming_appts : Sequence[NexHealthAppointment] | None
+    provider_id: int
+
+
