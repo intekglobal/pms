@@ -1049,9 +1049,9 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
 
         print(f"fetch patients response data: {fetch_patients_response_data}")
 
-        patients_data: Sequence[NexHealthPatient] = fetch_patients_response_data[
-            "data"
-        ]["patients"]
+        patients_data: list[NexHealthPatient] = fetch_patients_response_data["data"][
+            "patients"
+        ]
 
         if raw_response:
             patients = patients_data

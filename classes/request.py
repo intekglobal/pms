@@ -45,7 +45,7 @@ class GetOperatoriesResponse(GetResponse[Sequence[NexHealthOperatory]]):
 
 class GetPatientsResponse(BaseModel):
     count: int
-    data: Sequence[Patient] | Sequence[NexHealthPatient]
+    data: list[Patient] | list[NexHealthPatient]
 
 
 class GetProceduresResponse(GetResponse[Sequence[NexHealthProcedure]]):

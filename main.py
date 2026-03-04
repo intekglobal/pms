@@ -5,12 +5,15 @@ from fastapi import HTTPException
 from fastapi import Query
 from starlette.status import HTTP_400_BAD_REQUEST
 from typing import Annotated
+from typing import Any
 from typing import Literal
+from typing import TypeIs
 from typing import Sequence
 
 # Local imports
 from classes.nexhealth import NexHealthAvailability
 from classes.nexhealth import NexHealthGuardianPatient
+from classes.nexhealth import NexHealthPatient
 from classes.nexhealth_sdk import NexHealthSDK
 from classes.pms import Appointment
 from classes.pms import Patient
@@ -34,6 +37,14 @@ from type_definitions.nexhealth_types import NexHealthSubscriptionFeatureType
 app = FastAPI()
 bad_request_message = "Bad request; please check your call and then try again"
 local_configuration_error_message = "Configuration type currently not supported"
+
+
+def is_nexhealth_patient(value: Any) -> TypeIs[NexHealthPatient]:
+    return isinstance(value, dict) and "bio" in value
+
+
+def is_nexhealth_patient_list(value: Any) -> TypeIs[list[NexHealthPatient]]:
+    return isinstance(value, list) and is_nexhealth_patient(value[0])
 
 
 @app.post("/appointment_slots")
@@ -455,6 +466,108 @@ async def get_patients(
     return get_patients_response
 
 
+# --- WIP Endpoints for Recalls ---#
+@app.post("/patient_by_procedures")
+async def get_patient_by_procedures(
+    procedure_ids: list[str],
+    configuration: Annotated[RequestConfiguration | None, Body(embed=True)] = None,
+    location_id: int | None = None,
+    per_page: int = PER_PAGE,
+    status: str | None = None,
+    subdomain: str | None = None,
+) -> GetPatientsResponse:
+    """
+    Returns patients that have had procedures updated after the provided timestamp. Can be filtered by provider, patient,
+    or appointment.
+    """
+    if configuration:
+        params = configuration.params
+
+        if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+            raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+    else:
+        params = None
+
+    get_patients_response = NexHealthSDK.get_patients(
+        configuration=params,
+        include=["procedures", "upcoming_appts"],
+        location_id=location_id,
+        per_page=per_page,
+        subdomain=subdomain,
+    )
+
+    patients_data = get_patients_response.data
+    patients_with_code: list[NexHealthPatient] | list[Patient] = []
+
+    print(f"Total patients retrieved: {get_patients_response.count}")
+
+    if get_patients_response.count == 0:
+        return GetPatientsResponse(count=0, data=[])
+    if is_nexhealth_patient_list(patients_data):
+        n_patients_with_code: list[NexHealthPatient] = []
+        n_patients_with_procedure: list[NexHealthPatient] = []
+
+        for n_patient in patients_data:
+            n_procedures = n_patient["procedures"]
+
+            if n_procedures is not None and len(n_procedures) > 0:
+                print(
+                    f"Patient {n_patient['id']} - {n_patient['first_name']} {n_patient['last_name']} has {len(n_procedures)} procedures"
+                )
+
+                n_patients_with_procedure.append(n_patient)
+
+                for procedure in n_procedures:
+                    if procedure["code"] in procedure_ids and (
+                        status is None or procedure["status"] == status
+                    ):
+                        print(
+                            f"Patient {n_patient['id']} - {n_patient['first_name']} {n_patient['last_name']}"
+                        )
+
+                        n_patients_with_code.append(n_patient)
+                        break
+
+        print(f"Patients with at least one procedure: {len(n_patients_with_procedure)}")
+
+        patients_with_code = n_patients_with_code
+    else:
+        pms_patients_with_code: list[Patient] = []
+        pms_patients_with_procedure: list[Patient] = []
+
+        for pms_patient in patients_data:
+            pms_procedures = pms_patient.procedures
+
+            if pms_procedures is not None and len(pms_procedures) > 0:
+                print(
+                    f"Patient {pms_patient.id} - {pms_patient.first_name} {pms_patient.last_name} has {len(pms_procedures)} procedures"
+                )
+
+                pms_patients_with_procedure.append(pms_patient)
+
+                for procedure in pms_procedures:
+                    if procedure["code"] in procedure_ids and (
+                        status is None or procedure["status"] == status
+                    ):
+                        print(
+                            f"Patient {pms_patient.id} - {pms_patient.first_name} {pms_patient.last_name}"
+                        )
+
+                        pms_patients_with_code.append(pms_patient)
+                        break
+
+        print(
+            f"Patients with at least one procedure: {len(pms_patients_with_procedure)}"
+        )
+
+        patients_with_code = pms_patients_with_code
+
+    count = len(patients_with_code)
+
+    print(f"Patients with specified procedure codes: {count}")
+    return GetPatientsResponse(count=count, data=patients_with_code)
+
+
 @app.post("/procedures")
 async def get_procedures(
     updated_after: str,
@@ -466,6 +579,10 @@ async def get_procedures(
     provider_id: int | None = None,
     subdomain: str | None = None,
 ) -> GetProceduresResponse:
+    """
+    Returns procedures that have been updated after the provided timestamp. Can be
+    filtered by provider, patient, or appointment.
+    """
     # TODO: Enable `Local` configuration
     if configuration:
         params = configuration.params
@@ -531,6 +648,10 @@ async def reschedule_appointment(
     subdomain: str | None = None,
     unavailable: Annotated[bool | None, Body()] = None,
 ) -> Appointment:
+    """
+    Reschedules an appointment by first cancelling the existing appointment and then creating a new one with the provided details.
+    If provider_id is not provided, it will use the default provider ID from the configuration.
+    """
     if configuration:
         params = configuration.params
 
