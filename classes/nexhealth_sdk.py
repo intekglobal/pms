@@ -1,3 +1,4 @@
+import httpx
 import requests
 from fastapi import HTTPException
 from starlette.status import HTTP_401_UNAUTHORIZED
@@ -18,6 +19,7 @@ from classes.request import GetAppointmentsResponse
 from classes.request import GetLocationsResponse
 from classes.request import GetOperatoriesResponse
 from classes.request import GetPatientsResponse
+from classes.request import GetProceduresResponse
 from classes.request import GetProvidersResponse
 from ehr_abs_class import NexHealthConfig
 from ehr_abs_class import PER_PAGE
@@ -1043,6 +1045,73 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             count=fetch_patients_response_data["count"],
             data=patients,
         )
+
+    @classmethod
+    def get_procedures(
+        cls,
+        *,
+        appointment_id: int | None = None,
+        configuration: NexHealthConfig | None = None,
+        location_id: int | None = None,
+        patient_id: int | None = None,
+        per_page: int = PER_PAGE,
+        provider_id: int | None = None,
+        subdomain: str | None = None,
+        updated_after: str,
+    ) -> GetProceduresResponse:
+        c_location_id, c_subdomain = compute_subdomain_and_location_id(
+            configuration=configuration, location_id=location_id, subdomain=subdomain
+        )
+
+        if c_location_id is None or c_subdomain is None:
+            print("Error: `location_id` and/or `subdomain` missing")
+            raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating patient")
+
+        headers = cls.generate_headers()
+        url = f"{settings.nexhealth_url}/procedures"
+        params = {
+            "subdomain": c_subdomain,
+            "location_id": c_location_id,
+            "updated_after": updated_after,
+            "per_page": per_page,
+        }
+
+        if appointment_id is not None:
+            params["appointment_id"] = appointment_id
+        if patient_id is not None:
+            params["patient_id"] = patient_id
+        if per_page is not None:
+            params["per_page"] = per_page
+        if provider_id is not None:
+            params["provider_id"] = provider_id
+        if updated_after is not None:
+            params["updated_after"] = updated_after
+
+        try:
+            with httpx.Client() as client:
+                response = client.get(url=url, params=params, headers=headers)
+                response.raise_for_status()
+                nex_health_get_procedures_response_data = response.json()
+        except httpx.HTTPStatusError as exc:
+            print(
+                f"HTTP error occurred: {exc.response.status_code} - {exc.response.text}"
+            )
+            raise HTTPException(
+                status_code=exc.response.status_code,
+                detail=f"Error retrieving procedures: {exc.response.text}",
+            )
+        except Exception as exc:
+            print(f"Unexpected error occurred: {exc}")
+            raise HTTPException(
+                status_code=HTTP_400_BAD_REQUEST,
+                detail=f"Unexpected error retrieving procedures: {exc}",
+            )
+
+        nex_health_get_procedures_response = GetProceduresResponse(
+            count=nex_health_get_procedures_response_data["count"],
+            data=nex_health_get_procedures_response_data["data"],
+        )
+        return nex_health_get_procedures_response
 
     @classmethod
     def get_providers(

@@ -19,6 +19,7 @@ from classes.request import GetAppointmentsResponse
 from classes.request import GetLocationsResponse
 from classes.request import GetOperatoriesResponse
 from classes.request import GetPatientsResponse
+from classes.request import GetProceduresResponse
 from classes.request import GetProvidersResponse
 from classes.request import NexHealthParams
 from classes.request import RequestConfiguration
@@ -446,6 +447,39 @@ async def get_patients(
         updated_since=updated_since,
     )
     return get_patients_response
+
+
+@app.post("/procedures")
+async def get_procedures(
+    updated_after: str,
+    appointment_id: int | None = None,
+    configuration: Annotated[RequestConfiguration | None, Body(embed=True)] = None,
+    location_id: int | None = None,
+    patient_id: int | None = None,
+    per_page: int = PER_PAGE,
+    provider_id: int | None = None,
+    subdomain: str | None = None,
+) -> GetProceduresResponse:
+    # TODO: Enable `Local` configuration
+    if configuration:
+        params = configuration.params
+
+        if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+            raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+    else:
+        params = None
+
+    procedures = NexHealthSDK.get_procedures(
+        appointment_id=appointment_id,
+        configuration=params,
+        location_id=location_id,
+        patient_id=patient_id,
+        per_page=per_page,
+        provider_id=provider_id,
+        subdomain=subdomain,
+        updated_after=updated_after,
+    )
+    return procedures
 
 
 @app.post("/providers")

@@ -9,6 +9,7 @@ from classes.nexhealth import NexHealthAvailability
 from classes.nexhealth import NexHealthLocationResponse
 from classes.nexhealth import NexHealthOperatory
 from classes.nexhealth import NexHealthPatient
+from classes.nexhealth import NexHealthProcedure
 from classes.nexhealth import NexHealthProvider
 from classes.pms import Appointment
 from classes.pms import Patient
@@ -45,6 +46,10 @@ class GetOperatoriesResponse(GetResponse[Sequence[NexHealthOperatory]]):
 class GetPatientsResponse(BaseModel):
     count: int
     data: Sequence[Patient] | Sequence[NexHealthPatient]
+
+
+class GetProceduresResponse(GetResponse[Sequence[NexHealthProcedure]]):
+    count: int
 
 
 class GetProvidersResponse(GetResponse[Sequence[NexHealthProvider]]):
