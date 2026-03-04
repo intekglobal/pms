@@ -11,6 +11,7 @@ from typing import Sequence
 from ehr_abs_class import NexHealthConfig
 from ehr_abs_class import PER_PAGE
 from ehr_abs_class import PMSAbstractBaseClass
+from lib.utilities import generate_pms_patient
 from lib.utilities import generate_pms_patients
 from settings import Settings
 from .nexhealth import NexHealthAppointment
@@ -333,7 +334,10 @@ class NexHealthSDK(PMSAbstractBaseClass):
                 detail="Error creating patient",
                 status_code=HTTP_400_BAD_REQUEST,
             )
-        return create_patient_response_data["data"]["user"]
+        print(f"create patient response data: {create_patient_response_data}")
+        return generate_pms_patient(
+            {"provider_id": provider_id, **create_patient_response_data["data"]["user"]}
+        )
 
     @classmethod
     def get_appointment(
