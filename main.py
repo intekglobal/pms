@@ -129,6 +129,20 @@ async def create_patient(
     return create_patient_response
 
 
+@app.post("/operatories")
+async def get_operatories(
+    configuration: Annotated[RequestConfiguration, Body(embed=True)],
+):
+    params = configuration.params
+
+    # TODO: Enable `Local` configuration
+    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+
+    get_operatories_response = NexHealthSDK.get_operatories(configuration=params)
+    return get_operatories_response
+
+
 @app.post("/patients")
 async def get_patients(
     configuration: Annotated[RequestConfiguration, Body(embed=True)],
@@ -151,6 +165,20 @@ async def get_patients(
         use_legacy_format=legacy_format,
     )
     return patients
+
+
+@app.post("/providers")
+async def get_providers(
+    configuration: Annotated[RequestConfiguration, Body(embed=True)],
+):
+    params = configuration.params
+
+    # TODO: Enable `Local` configuration
+    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+
+    get_providers_response = NexHealthSDK.get_providers(configuration=params)
+    return get_providers_response
 
 
 @app.post("/reschedule_appointment/{id}")
