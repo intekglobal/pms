@@ -4,10 +4,16 @@ from typing import NotRequired
 from typing import Sequence
 from typing import TypedDict
 
+type NexHealthIncludeAppointmentQueryValue = Literal[
+    "operatory",
+    "patient",
+    "procedures",
+]
 type NexHealthIncludePatientQueryValue = Literal[
     "adjustments",
     "upcoming_appts",
 ]
+type NexHealthIncludeAppointmentQuery = Sequence[NexHealthIncludeAppointmentQueryValue]
 type NexHealthIncludePatientQuery = Sequence[NexHealthIncludePatientQueryValue]
 
 
@@ -49,9 +55,12 @@ class NexHealthAppointment(TypedDict):
     location_id: int
     foreign_id: str | None
     foreign_id_type: str | Literal["nex"]
+    patient: NotRequired[Dict]
     patient_confirmed: bool
+    procedures: NotRequired[Sequence[Dict]]
     created_by_user_id: int | None
     is_guardian: bool
+    operatory: NotRequired[Dict]
     operatory_id: int | None
     timezone_offset: str
 

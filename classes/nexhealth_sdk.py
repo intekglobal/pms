@@ -15,6 +15,7 @@ from lib.utilities import generate_pms_patient
 from lib.utilities import generate_pms_patients
 from settings import settings
 from .nexhealth import NexHealthAppointment
+from .nexhealth import NexHealthIncludeAppointmentQuery
 from .nexhealth import NexHealthIncludePatientQuery
 from .nexhealth import NexHealthPatient
 from .request import GetPatientsResponse
@@ -377,11 +378,23 @@ class NexHealthSDK(PMSAbstractBaseClass):
     def get_appointments(
         cls,
         *,
+        appointment_type_id: int | None = None,
+        cancelled: bool | None = None,
         configuration: NexHealthConfig,
+        created_by: str | None = None,
         end: str,
+        foreign_id: str | None = None,
+        include: NexHealthIncludeAppointmentQuery | None = None,
+        nex_only: bool | None = None,
+        operatory_ids: Sequence[int] | None = None,
+        page: int | None = None,
         patient_id: int | None = None,
         per_page: int = PER_PAGE,
+        provider_ids: Sequence[int] | None = None,
         start: str,
+        timezone: str | None = None,
+        unavailable: bool | None = None,
+        updated_since: str | None = None,
     ):
         headers = cls.generate_headers()
         generated_url = cls.__generate_url(
@@ -391,8 +404,35 @@ class NexHealthSDK(PMSAbstractBaseClass):
         )
         url = f"{generated_url}&end={end}&start={start}&per_page={per_page}"
 
-        if patient_id is not None:
+        if appointment_type_id:
+            url = f"{url}&appointment_type_id={appointment_type_id}"
+        if cancelled is not None:
+            url = f"{url}&cancelled={cancelled}"
+        if created_by:
+            url = f"{url}&created_by={created_by}"
+        if foreign_id:
+            url = f"{url}&foreign_id={foreign_id}"
+        if include:
+            for value in include:
+                url = f"{url}&include[]={value}"
+        if nex_only is not None:
+            url = f"{url}&nex_only={nex_only}"
+        if operatory_ids:
+            for value in operatory_ids:
+                url = f"{url}&operatory_ids[]={value}"
+        if page:
+            url = f"{url}&page={page}"
+        if patient_id:
             url = f"{url}&patient_id={patient_id}"
+        if provider_ids:
+            for value in provider_ids:
+                url = f"{url}&provider_ids[]={value}"
+        if timezone:
+            url = f"{url}&timezone={timezone}"
+        if unavailable is not None:
+            url = f"{url}&unavailable={unavailable}"
+        if updated_since:
+            url = f"{url}&updated_since={updated_since}"
 
         get_appointments_response = requests.get(url, headers=headers)
         get_appointments_response_data = get_appointments_response.json()
