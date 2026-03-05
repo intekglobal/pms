@@ -1,6 +1,8 @@
 from pydantic import AliasPath
 from pydantic import BaseModel
 from pydantic import Field
+from typing import Dict
+from typing import Sequence
 
 
 class Patient(BaseModel):
@@ -23,6 +25,10 @@ class Patient(BaseModel):
         validation_alias=AliasPath("bio", "phone_number"),
     )
     provider_id: int
+    upcoming_appointments: Sequence[Dict] | None = Field(
+        default=None,
+        validation_alias=AliasPath("upcoming_appts"),
+    )
     wireless_phone: str | None = Field(
         default=None,
         validation_alias=AliasPath("bio", "cell_phone_number"),
