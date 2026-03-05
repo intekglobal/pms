@@ -9,6 +9,7 @@ from typing import Literal
 from typing import Sequence
 
 # Local import
+from classes.nexhealth import NexHealthIncludeAppointmentQueryValue
 from classes.nexhealth import NexHealthIncludePatientQueryValue
 from classes.nexhealth_sdk import NexHealthSDK
 from classes.request import NexHealthParams
@@ -22,13 +23,28 @@ local_configuration_error_message = "Configuration type currently not supported"
 
 
 @app.post("/appointments")
-async def retrieve_appointments(
+async def get_appointments(
     configuration: Annotated[RequestConfiguration, Body(embed=True)],
     end_date: str,
     start_date: str,
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
+    appointment_type_id: int | None = None,
+    cancelled: bool | None = None,
+    created_by: str | None = None,
+    foreign_id: str | None = None,
+    include: Annotated[
+        Sequence[NexHealthIncludeAppointmentQueryValue] | None,
+        Query(),
+    ] = None,
+    nex_only: bool | None = None,
+    operatory_ids: Annotated[Sequence[int] | None, Query()] = None,
+    page: int | None = None,
     patient_id: int | None = None,
     per_page: int = PER_PAGE,
+    provider_ids: Annotated[Sequence[int] | None, Query()] = None,
+    timezone: str | None = None,
+    unavailable: bool | None = None,
+    updated_since: str | None = None,
 ):
     params = configuration.params
 
@@ -37,11 +53,23 @@ async def retrieve_appointments(
         raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
 
     get_appointments_response = NexHealthSDK.get_appointments(
+        appointment_type_id=appointment_type_id,
+        cancelled=cancelled,
         configuration=params,
+        created_by=created_by,
         end=end_date,
+        foreign_id=foreign_id,
+        include=include,
+        nex_only=nex_only,
+        operatory_ids=operatory_ids,
+        page=page,
         patient_id=patient_id,
         per_page=per_page,
+        provider_ids=provider_ids,
         start=start_date,
+        timezone=timezone,
+        unavailable=unavailable,
+        updated_since=updated_since,
     )
     return get_appointments_response
 
