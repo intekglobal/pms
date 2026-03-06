@@ -31,6 +31,6 @@ class NexHealthParams(BaseModel):
     subdomain: str
 
 
-class RequestConfiguration(BaseModel):
+class RequestConfiguration[T = LocalParams | NexHealthParams](BaseModel):
     type: Literal["Local", "NexHealth"]
-    params: NexHealthParams | LocalParams
+    params: T
