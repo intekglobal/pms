@@ -11,6 +11,7 @@ from typing import Sequence
 # Local import
 from classes.nexhealth import NexHealthIncludeAppointmentQueryValue
 from classes.nexhealth import NexHealthIncludePatientQueryValue
+from classes.nexhealth import NexHealthSubscriptionFeature
 from classes.nexhealth_sdk import NexHealthSDK
 from classes.request import NexHealthParams
 from classes.request import RequestConfiguration
@@ -216,6 +217,27 @@ async def create_patient(
         provider_id=c_provider_id,
     )
     return create_patient_response
+
+
+@app.post("/locations")
+async def get_locations(
+    x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
+    configuration: Annotated[
+        RequestConfiguration[NexHealthParams] | None, Body(embed=True)
+    ] = None,
+    filter_by_subscription_feature: NexHealthSubscriptionFeature | None = None,
+    foreign_id: str | None = None,
+    inactive: bool | None = None,
+    subdomain: str | None = None,
+):
+    get_locations_response = NexHealthSDK.get_locations(
+        configuration=configuration.params if configuration else None,
+        filter_by_subscription_feature=filter_by_subscription_feature,
+        foreign_id=foreign_id,
+        inactive=inactive,
+        subdomain=subdomain,
+    )
+    return get_locations_response
 
 
 @app.post("/operatories")
