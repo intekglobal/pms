@@ -80,14 +80,18 @@ class NexHealthSDK(PMSAbstractBaseClass):
     def create_appointment(
         cls,
         *,
+        appointment_type_id: int | None = None,
         configuration: NexHealthConfig,
+        descriptor_ids: Sequence[int] | None = None,
         end_time: str | None = None,
-        notify_patient: bool | None = None,
+        note: str | None = None,
+        notify_patient: bool | None = None,  # Defaults to false in `NexHealth`
         operatory_id: int,
         patient_id: int,
         provider_id: int,
         start_time: str,  # HH:mm
     ):
+        # TODO: Confirm the appointment is available, on a patient basis
         headers = cls.generate_headers(post_call=True)
         appt = {
             "operatory_id": operatory_id,
@@ -105,8 +109,14 @@ class NexHealthSDK(PMSAbstractBaseClass):
         )
         url = generated_url
 
+        if appointment_type_id:
+            appt.update({"appointment_type_id": appointment_type_id})
+        if descriptor_ids:
+            appt.update({"descriptor_ids": descriptor_ids})
         if end_time:
             appt.update({"end_time": end_time})
+        if note:
+            appt.update({"note": note})
         if notify_patient is not None:
             url = f"{url}&notify_patient={notify_patient}"
 

@@ -101,6 +101,10 @@ async def create_appointment(
     patient_id: Annotated[int, Body()],
     start_time: Annotated[str, Body()],
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
+    appointment_type_id: Annotated[int | None, Body()] = None,
+    descriptor_ids: Sequence[int] | None = None,
+    end_time: Annotated[str | None, Body()] = None,
+    note: Annotated[str | None, Body()] = None,
     provider_id: Annotated[int | None, Body()] = None,
 ):
     params = configuration.params
@@ -120,7 +124,11 @@ async def create_appointment(
         )
 
     appointment_result = NexHealthSDK.create_appointment(
+        appointment_type_id=appointment_type_id,
         configuration=params,
+        descriptor_ids=descriptor_ids,
+        end_time=end_time,
+        note=note,
         operatory_id=operatory_id,
         patient_id=patient_id,
         provider_id=c_provider_id,
