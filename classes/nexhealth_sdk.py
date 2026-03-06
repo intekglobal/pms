@@ -565,14 +565,8 @@ class NexHealthSDK(PMSAbstractBaseClass):
         url = generated_url
 
         if include:
-            # for idx, value in enumerate(include):
-            #     if idx == 0:
-            #         url = f"{url}?include[]={value}"
-            #     else:
-            #         url = f"{url}&include[]={value}"
             for value in include:
                 url = f"{url}&include[]={value}"
-            print(f"url: {url}")
 
         get_appointment_types_response = requests.get(url, headers=headers)
         get_appointment_types_response_data = get_appointment_types_response.json()
