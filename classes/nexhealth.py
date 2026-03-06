@@ -92,3 +92,19 @@ class NexHealthPatient(BaseNexHealthPatient):
     adjustments: NotRequired[Sequence[Dict]]
     provider_id: int
     upcoming_appts: NotRequired[Sequence[Dict]]
+
+
+type NexHealthSubscriptionFeature = Literal[
+    "campaigns",
+    "enterprise",
+    "forms",
+    "insurance_verification",
+    "ledger_sync",
+    "messaging",
+    "online_booking",
+    "payments",
+    "recalls",
+    "reminders",
+    "reviews",
+    "waitlist",
+]

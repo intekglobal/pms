@@ -21,6 +21,7 @@ from .nexhealth import NexHealthAppointment
 from .nexhealth import NexHealthIncludeAppointmentQuery
 from .nexhealth import NexHealthIncludePatientQuery
 from .nexhealth import NexHealthPatient
+from .nexhealth import NexHealthSubscriptionFeature
 from .request import GetPatientsResponse
 from .request import GetAppointmentsResponse
 from .request import NexHealthParams
@@ -588,6 +589,53 @@ class NexHealthSDK(PMSAbstractBaseClass):
             )
         print(f"Get appointment types data: {get_appointment_types_response_data}")
         return get_appointment_types_response_data["data"]
+
+    @classmethod
+    def get_locations(
+        cls,
+        *,
+        configuration: NexHealthConfig | None = None,
+        filter_by_subscription_feature: NexHealthSubscriptionFeature | None = None,
+        foreign_id: str | None = None,
+        inactive: bool | None = None,
+        subdomain: str | None = None,
+    ):
+        c_subdomain = (
+            subdomain
+            if subdomain
+            else configuration.subdomain if configuration else None
+        )
+        headers = cls.generate_headers()
+        querystring_initiated = False
+        url = f"{settings.nexhealth_url}/locations"
+
+        if filter_by_subscription_feature:
+            url = f"{url}?filter_by_subscription_feature"
+            querystring_initiated = True
+        if foreign_id:
+            url = f"{url}{'&' if querystring_initiated else '?'}foreign_id={foreign_id}"
+            querystring_initiated = True
+        if inactive is not None:
+            url = f"{url}{'&' if querystring_initiated else '?'}inactive={stringify_bool(inactive)}"
+            querystring_initiated = True
+        if c_subdomain:
+            url = f"{url}{'&' if querystring_initiated else '?'}subdomain={c_subdomain}"
+
+        get_locations_response = requests.get(url, headers=headers)
+        get_locations_response_data = get_locations_response.json()
+        get_locations_response_status_code = get_locations_response.status_code
+
+        if get_locations_response_status_code != 200:
+            print("Error retrieving locations")
+            print(f"Response status code: {get_locations_response_status_code}")
+
+            if get_locations_response_status_code in [400, 401, 403, 500]:
+                print(f"Response data: {get_locations_response_data}")
+                print(f"Error: {get_locations_response_data['error'][0]}")
+            else:
+                print(f"Error: {get_locations_response_data}")
+        print(f"get locations response data: {get_locations_response_data}")
+        return get_locations_response_data["data"]
 
     @classmethod
     def get_operatories(
