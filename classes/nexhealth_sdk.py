@@ -11,15 +11,18 @@ from typing import Sequence
 from ehr_abs_class import NexHealthConfig
 from ehr_abs_class import PER_PAGE
 from ehr_abs_class import PMSAbstractBaseClass
+from lib.utilities import generate_pms_appointment
+from lib.utilities import generate_pms_appointments
 from lib.utilities import generate_pms_patient
 from lib.utilities import generate_pms_patients
 from settings import settings
+from .nexhealth import BaseNexHealthPatient
 from .nexhealth import NexHealthAppointment
 from .nexhealth import NexHealthIncludeAppointmentQuery
 from .nexhealth import NexHealthIncludePatientQuery
 from .nexhealth import NexHealthPatient
 from .request import GetPatientsResponse
-from .request import NexHealthGetAppointmentsResponse
+from .request import GetAppointmentsResponse
 from .request import NexHealthParams
 
 
@@ -127,8 +130,14 @@ class NexHealthSDK(PMSAbstractBaseClass):
                 detail="Error creating appointment",
                 status_code=HTTP_400_BAD_REQUEST,
             )
-        print(f"Create appointment response data: {create_appointment_response_data}")
-        return create_appointment_response_data["data"]["appt"]
+
+        print(f"create appointment response data: {create_appointment_response_data}")
+
+        appointment_data: NexHealthAppointment = create_appointment_response_data[
+            "data"
+        ]["appt"]
+        appointment = generate_pms_appointment(appointment_data)
+        return appointment
 
     @classmethod
     def create_appointment_type(
@@ -334,10 +343,12 @@ class NexHealthSDK(PMSAbstractBaseClass):
                 detail="Error creating patient",
                 status_code=HTTP_400_BAD_REQUEST,
             )
+
         print(f"create patient response data: {create_patient_response_data}")
-        return generate_pms_patient(
-            {"provider_id": provider_id, **create_patient_response_data["data"]["user"]}
-        )
+
+        user_data: BaseNexHealthPatient = create_patient_response_data["data"]["user"]
+        patient = generate_pms_patient({"provider_id": provider_id, **user_data})
+        return patient
 
     @classmethod
     def get_appointment(
@@ -391,6 +402,7 @@ class NexHealthSDK(PMSAbstractBaseClass):
         patient_id: int | None = None,
         per_page: int = PER_PAGE,
         provider_ids: Sequence[int] | None = None,
+        raw_response: bool = False,
         start: str,
         timezone: str | None = None,
         unavailable: bool | None = None,
@@ -457,10 +469,20 @@ class NexHealthSDK(PMSAbstractBaseClass):
                 detail="Error retrieving appointments",
                 status_code=HTTP_400_BAD_REQUEST,
             )
+
         print(f"get appointments response data: {get_appointments_response_data}")
-        return NexHealthGetAppointmentsResponse(
+
+        appointments_data: Sequence[NexHealthAppointment] = (
+            get_appointments_response_data["data"]
+        )
+
+        if raw_response:
+            appointments = appointments_data
+        else:
+            appointments = generate_pms_appointments(appointments_data)
+        return GetAppointmentsResponse(
             count=get_appointments_response_data["count"],
-            data=get_appointments_response_data["data"],
+            data=appointments,
         )
 
     @classmethod
@@ -670,7 +692,9 @@ class NexHealthSDK(PMSAbstractBaseClass):
                 detail="Error retrieving patients",
                 status_code=HTTP_400_BAD_REQUEST,
             )
+
         print(f"fetch patients response data: {fetch_patients_response_data}")
+
         patients_data: Sequence[NexHealthPatient] = fetch_patients_response_data[
             "data"
         ]["patients"]
@@ -766,7 +790,7 @@ class NexHealthSDK(PMSAbstractBaseClass):
         configuration: NexHealthConfig,
         confirm: Literal[True] | None = None,
         id: int,
-    ) -> NexHealthAppointment:
+    ):
         if cancel is None and check_in_at is None and (confirm is None or not confirm):
             print("Error: no patch was action provided")
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error processing appointment")
@@ -815,4 +839,9 @@ class NexHealthSDK(PMSAbstractBaseClass):
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error processing appointment")
 
         print(f"path appointment response data: {patch_appointment_response_data}")
-        return patch_appointment_response_data["data"]["appt"]
+
+        appointment_data: NexHealthAppointment = patch_appointment_response_data[
+            "data"
+        ]["appt"]
+        appointment = generate_pms_appointment(appointment_data)
+        return appointment

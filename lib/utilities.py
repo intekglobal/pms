@@ -1,8 +1,39 @@
 from typing import Sequence
 
 # Local packages
+from classes.nexhealth import NexHealthAppointment
 from classes.nexhealth import NexHealthPatient
+from classes.pms import Appointment
 from classes.pms import Patient
+
+
+def generate_pms_appointment(
+    nexhealth_appointment: NexHealthAppointment,
+) -> Appointment:
+    nexhealth_patient = (
+        nexhealth_appointment["patient"] if "patient" in nexhealth_appointment else None
+    )
+    appointment = Appointment.model_validate(
+        {
+            **nexhealth_appointment,
+            "patient": (
+                generate_pms_patient(
+                    {
+                        **nexhealth_patient,
+                        "provider_id": nexhealth_appointment["provider_id"],
+                    }
+                )
+                if nexhealth_patient
+                else None
+            ),
+        }
+    )
+    return appointment
+
+
+def generate_pms_appointments(data: Sequence[NexHealthAppointment]):
+    pms_appointments = [generate_pms_appointment(value) for value in data]
+    return pms_appointments
 
 
 def generate_pms_patient(nexhealth_patient: NexHealthPatient) -> Patient:
