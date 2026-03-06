@@ -42,6 +42,7 @@ async def get_appointments(
     patient_id: int | None = None,
     per_page: int = PER_PAGE,
     provider_ids: Annotated[Sequence[int] | None, Query()] = None,
+    raw_response: bool = False,
     timezone: str | None = None,
     unavailable: bool | None = None,
     updated_since: str | None = None,
@@ -66,6 +67,7 @@ async def get_appointments(
         patient_id=patient_id,
         per_page=per_page,
         provider_ids=provider_ids,
+        raw_response=raw_response,
         start=start_date,
         timezone=timezone,
         unavailable=unavailable,
@@ -277,7 +279,7 @@ async def reschedule_appointment(
     create_appointment_response = NexHealthSDK.create_appointment(
         configuration=params,
         operatory_id=operatory_id,
-        patient_id=patch_appointment_response["patient_id"],
+        patient_id=patch_appointment_response.patient_id,
         provider_id=c_provider_id,
         start_time=start_time,
     )

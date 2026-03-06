@@ -17,6 +17,16 @@ type NexHealthIncludeAppointmentQuery = Sequence[NexHealthIncludeAppointmentQuer
 type NexHealthIncludePatientQuery = Sequence[NexHealthIncludePatientQueryValue]
 
 
+class BaseNexHealthAppointment(TypedDict):
+    confirmed: bool
+    end_time: str
+    id: int
+    location_id: int
+    provider_id: int
+    provider_name: str
+    start_time: str
+
+
 class Bio(TypedDict):
     city: NotRequired[str]
     state: NotRequired[str]
@@ -35,38 +45,7 @@ class Bio(TypedDict):
     previous_foreign_id: NotRequired[str | None]
 
 
-class NexHealthAppointment(TypedDict):
-    id: int
-    patient_id: int
-    provider_id: int
-    provider_name: str
-    start_time: str
-    confirmed: bool
-    patient_missed: bool
-    created_at: str
-    updated_at: str
-    note: str | None
-    end_time: str
-    unavailable: bool
-    cancelled: bool
-    cancelled_at: str | None
-    timezone: str
-    institution_id: int
-    location_id: int
-    foreign_id: str | None
-    foreign_id_type: str | Literal["nex"]
-    patient: NotRequired[Dict]
-    patient_confirmed: bool
-    procedures: NotRequired[Sequence[Dict]]
-    created_by_user_id: int | None
-    is_guardian: bool
-    operatory: NotRequired[Dict]
-    operatory_id: int | None
-    timezone_offset: str
-
-
-class NexHealthPatient(TypedDict):
-    adjustments: NotRequired[Sequence[Dict]]
+class BaseNexHealthPatient(TypedDict):
     id: int
     email: str | None
     first_name: str
@@ -83,5 +62,33 @@ class NexHealthPatient(TypedDict):
     last_sync_time: str | None
     preferred_language: str | None
     location_ids: Sequence[int]
+
+
+class NexHealthAppointment(BaseNexHealthAppointment):
+    patient_id: int
+    confirmed_at: str | None
+    patient_missed: bool
+    created_at: str
+    updated_at: str
+    note: str | None
+    unavailable: bool
+    cancelled: bool
+    cancelled_at: str | None
+    timezone: str
+    institution_id: int
+    foreign_id: str | None
+    foreign_id_type: str | Literal["nex"]
+    operatory: NotRequired[Dict]
+    patient_confirmed: bool
+    patient: NotRequired[BaseNexHealthPatient]
+    procedures: NotRequired[Sequence[Dict]]
+    created_by_user_id: int | None
+    is_guardian: bool
+    operatory_id: int | None
+    timezone_offset: str
+
+
+class NexHealthPatient(BaseNexHealthPatient):
+    adjustments: NotRequired[Sequence[Dict]]
     provider_id: int
     upcoming_appts: NotRequired[Sequence[Dict]]
