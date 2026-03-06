@@ -137,6 +137,46 @@ async def create_appointment(
     return appointment_result
 
 
+@app.post("/create_availability")
+async def create_availability(
+    begin_time: Annotated[str, Body()],
+    configuration: Annotated[RequestConfiguration, Body()],
+    days: Sequence[
+        Literal[
+            "Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+        ]
+    ],
+    end_time: Annotated[str, Body()],
+    operatory_id: Annotated[int, Body()],
+    provider_id: Annotated[int, Body()],
+    appointment_type_ids: Sequence[int] | None = None,
+    specific_date: Annotated[str | None, Body()] = None,
+):
+    params = configuration.params
+
+    # TODO: Enable `Local` configuration
+    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+
+    create_availability_response = NexHealthSDK.create_availability(
+        appointment_type_ids=appointment_type_ids,
+        begin_time=begin_time,
+        configuration=params,
+        days=days,
+        end_time=end_time,
+        operatory_id=operatory_id,
+        provider_id=provider_id,
+        specific_date=specific_date,
+    )
+    return create_availability_response
+
+
 @app.post("/create_patient")
 async def create_patient(
     configuration: RequestConfiguration,
