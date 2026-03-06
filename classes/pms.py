@@ -73,6 +73,7 @@ class Patient(BasePatient):
 
     adjustments: Sequence[Dict] | None = None
     procedures: Sequence[Dict] | None = None
+    provider_id: int
     upcoming_appointments: Sequence[BaseAppointment] | None = Field(
         default=None,
         validation_alias=AliasPath("upcoming_appts"),
