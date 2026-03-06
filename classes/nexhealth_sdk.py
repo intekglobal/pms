@@ -221,6 +221,7 @@ class NexHealthSDK(PMSAbstractBaseClass):
     def create_availability(
         cls,
         *,
+        configuration: NexHealthConfig,
         active: bool | None = None,  # Defaults to `True` in Nexhealth
         appointment_type_ids: Sequence[int] | None = None,
         begin_time: str,
@@ -236,15 +237,15 @@ class NexHealthSDK(PMSAbstractBaseClass):
             ]
         ],
         end_time: str,
-        location_id: int,
         operatory_id: int,
         provider_id: int,
         specific_date: str | None = None,
-        subdomain: str,
     ):
         headers = cls.generate_headers(post_call=True)
         generated_url = cls.__generate_url(
-            location_id=location_id, path="/availabilities", subdomain=subdomain
+            location_id=configuration.location_id,
+            path="/availabilities",
+            subdomain=configuration.subdomain,
         )
         availability = {
             "begin_time": begin_time,
