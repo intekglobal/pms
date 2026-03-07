@@ -45,7 +45,7 @@ class BasePatient(BaseModel):
         default=None,
         validation_alias=AliasPath("bio", "cell_phone_number"),
     )
-    work_phone: str = Field(
+    work_phone: str | None = Field(
         default=None,
         validation_alias=AliasPath("bio", "work_phone_number"),
     )
