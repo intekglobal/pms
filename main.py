@@ -12,6 +12,7 @@ from typing import Sequence
 from classes.nexhealth import NexHealthIncludeAppointmentQueryValue
 from classes.nexhealth import NexHealthIncludePatientQueryValue
 from classes.nexhealth import NexHealthSubscriptionFeature
+from classes.nexhealth import NexHealthGender
 from classes.nexhealth_sdk import NexHealthSDK
 from classes.request import NexHealthParams
 from classes.request import RequestConfiguration
@@ -180,23 +181,46 @@ async def create_availability(
 
 @app.post("/create_patient")
 async def create_patient(
-    configuration: RequestConfiguration,
     date_of_birth: Annotated[str, Body()],
     first_name: Annotated[str, Body()],
     last_name: Annotated[str, Body()],
     phone_number: Annotated[str, Body()],
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
+    address_line_1: Annotated[str | None, Body()] = None,
+    address_line_2: Annotated[str | None, Body()] = None,
+    cell_phone_number: Annotated[str | None, Body()] = None,
+    city: Annotated[str | None, Body()] = None,
+    configuration: RequestConfiguration | None = None,
+    custom_contact_number: Annotated[str | None, Body()] = None,
     email: Annotated[str | None, Body()] = None,
+    gender: Annotated[NexHealthGender | None, Body()] = None,
+    height: Annotated[int | None, Body()] = None,
+    home_phone_number: Annotated[str | None, Body()] = None,
+    insurance_name: Annotated[str | None, Body()] = None,
+    location_id: int | None = None,
     provider_id: Annotated[int | None, Body()] = None,
+    race: Annotated[str | None, Body()] = None,
+    ssn: Annotated[str | None, Body()] = None,
+    state: Annotated[str | None, Body()] = None,
+    street_address: Annotated[str | None, Body()] = None,
+    subdomain: str | None = None,
+    weight: Annotated[int | None, Body()] = None,
+    work_phone_number: Annotated[str | None, Body()] = None,
+    zip_code: Annotated[str | None, Body()] = None,
 ):
-    params = configuration.params
-
     # TODO: Enable `Local` configuration
-    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
-        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+    if configuration:
+        params = configuration.params
 
-    c_email = email if email else params.default_patient_email
-    c_provider_id = provider_id if provider_id else params.default_provider_id
+        if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+            raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+
+        c_email = email if email else params.default_patient_email
+        c_provider_id = provider_id if provider_id else params.default_provider_id
+    else:
+        c_email = email
+        c_provider_id = provider_id
+        params = None
 
     if c_email is None or c_provider_id is None:
         print(
@@ -208,13 +232,31 @@ async def create_patient(
         )
 
     create_patient_response = NexHealthSDK.create_patient(
+        address_line_1=address_line_1,
+        address_line_2=address_line_2,
+        cell_phone_number=cell_phone_number,
+        city=city,
         configuration=params,
+        custom_contact_number=custom_contact_number,
         date_of_birth=date_of_birth,
         email=c_email,
         first_name=first_name,
+        gender=gender,
+        height=height,
+        home_phone_number=home_phone_number,
+        insurance_name=insurance_name,
         last_name=last_name,
+        location_id=location_id,
         phone_number=phone_number,
         provider_id=c_provider_id,
+        race=race,
+        ssn=ssn,
+        state=state,
+        street_address=street_address,
+        subdomain=subdomain,
+        weight=weight,
+        work_phone_number=work_phone_number,
+        zip_code=zip_code,
     )
     return create_patient_response
 

@@ -18,6 +18,7 @@ from lib.utilities import generate_pms_patients
 from settings import settings
 from .nexhealth import BaseNexHealthPatient
 from .nexhealth import NexHealthAppointment
+from .nexhealth import NexHealthGender
 from .nexhealth import NexHealthIncludeAppointmentQuery
 from .nexhealth import NexHealthIncludePatientQuery
 from .nexhealth import NexHealthPatient
@@ -31,7 +32,22 @@ def stringify_bool(arg: bool) -> Literal["false", "true"]:
     return "true" if arg else "false"
 
 
-class NexHealthSDK(PMSAbstractBaseClass):
+def compute_subdomain_and_location_id(
+    *,
+    configuration: NexHealthConfig | None,
+    location_id: int | None = None,
+    subdomain: str | None,
+):
+    if configuration is None:
+        c_location_id = location_id
+        c_subdomain = subdomain
+    else:
+        c_location_id = location_id if location_id else configuration.location_id
+        c_subdomain = subdomain if subdomain else configuration.subdomain
+    return c_location_id, c_subdomain
+
+
+class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
     @staticmethod
     def __get_access_token() -> str:
         headers = {
@@ -290,19 +306,47 @@ class NexHealthSDK(PMSAbstractBaseClass):
     def create_patient(
         cls,
         *,
-        configuration: NexHealthConfig,
+        address_line_1: str | None = None,
+        address_line_2: str | None = None,
+        cell_phone_number: str | None = None,
+        city: str | None = None,
+        configuration: NexHealthConfig | None = None,
+        custom_contact_number: str | None = None,
         date_of_birth: str,
         email: str,
         first_name: str,
+        gender: NexHealthGender | None = None,
+        height: int | None = None,
+        home_phone_number: str | None = None,
+        insurance_name: str | None = None,
         last_name: str,
+        location_id: int | None = None,
         phone_number: str,
         provider_id: int,
+        race: str | None = None,
+        ssn: str | None = None,
+        state: str | None = None,
+        street_address: str | None = None,
+        subdomain: str | None = None,
+        weight: int | None = None,
+        work_phone_number: str | None = None,
+        zip_code: str | None = None,
     ):
+        c_location_id, c_subdomain = compute_subdomain_and_location_id(
+            configuration=configuration, location_id=location_id, subdomain=subdomain
+        )
+
+        if c_location_id is None or c_subdomain is None:
+            print("Error: `location_id` and/or `subdomain` missing")
+            raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating patient")
+
         # Validate first that the patient does not already exist
         get_patients_response = cls.get_patients(
             configuration=configuration,
             date_of_birth=date_of_birth,
+            location_id=location_id,
             phone_number=phone_number,
+            subdomain=subdomain,
         )
 
         if get_patients_response.count:
@@ -311,24 +355,59 @@ class NexHealthSDK(PMSAbstractBaseClass):
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating patient")
 
         headers = cls.generate_headers(post_call=True)
+        bio: Dict = {
+            "date_of_birth": date_of_birth,
+            "phone_number": phone_number,
+        }
+
+        if address_line_1:
+            bio.update({"address_line_1": address_line_1})
+        if address_line_2:
+            bio.update({"address_line_2": address_line_2})
+        if cell_phone_number:
+            bio.update({"cell_phone_number": cell_phone_number})
+        if city:
+            bio.update({"city": city})
+        if custom_contact_number:
+            bio.update({"custom_contact_number": custom_contact_number})
+        if gender:
+            bio.update({"gender": gender})
+        if height:
+            bio.update({"height": height})
+        if home_phone_number:
+            bio.update({"home_phone_number": home_phone_number})
+        if insurance_name:
+            bio.update({"insurance_name": insurance_name})
+        if race:
+            bio.update({"race": race})
+        if ssn:
+            bio.update({"ssn": ssn})
+        if state:
+            bio.update({"state": state})
+        if street_address:
+            bio.update({"street_address": street_address})
+        if weight:
+            bio.update({"weight": weight})
+        if work_phone_number:
+            bio.update({"work_phone_number": work_phone_number})
+        if zip_code:
+            bio.update({"zip_code": zip_code})
+
         data = {
             "patient": {
                 "email": email,
                 "first_name": first_name,
                 "last_name": last_name,
-                "bio": {
-                    "date_of_birth": date_of_birth,
-                    "phone_number": phone_number,
-                },
+                "bio": bio,
             },
             "provider": {
                 "provider_id": provider_id,
             },
         }
         generated_url = cls.__generate_url(
-            location_id=configuration.location_id,
+            location_id=c_location_id,
             path="/patients",
-            subdomain=configuration.subdomain,
+            subdomain=c_subdomain,
         )
         create_patient_response = requests.post(
             generated_url, json=data, headers=headers
@@ -678,12 +757,13 @@ class NexHealthSDK(PMSAbstractBaseClass):
         *,
         appointment_date_end: str | None = None,
         appointment_date_start: str | None = None,
-        configuration: NexHealthConfig,
+        configuration: NexHealthConfig | None = None,
         date_of_birth: str | None = None,
         email: str | None = None,
         foreign_id: str | None = None,
         inactive: bool = False,
         include: NexHealthIncludePatientQuery | None = None,
+        location_id: int | None = None,
         location_strict: bool | None = None,  # defaults to `False` in `NexHealth`
         name: str | None = None,
         non_patient: bool = False,
@@ -691,13 +771,22 @@ class NexHealthSDK(PMSAbstractBaseClass):
         per_page: int = PER_PAGE,
         phone_number: str | None = None,
         raw_response: bool = False,
+        subdomain: str | None = None,
         updated_since: str | None = None,
     ) -> GetPatientsResponse:
+        c_location_id, c_subdomain = compute_subdomain_and_location_id(
+            configuration=configuration, location_id=location_id, subdomain=subdomain
+        )
+
+        if c_location_id is None or c_subdomain is None:
+            print("Error: `location_id` and/or `subdomain` missing")
+            raise HTTPException(HTTP_400_BAD_REQUEST, "Error retrieving patients.")
+
         headers = cls.generate_headers()
         generated_url = cls.__generate_url(
-            location_id=configuration.location_id,
+            location_id=c_location_id,
             path="/patients",
-            subdomain=configuration.subdomain,
+            subdomain=c_subdomain,
         )
         url = f"{generated_url}&per_page={per_page}"
         url = f"{url}&inactive={stringify_bool(inactive)}"

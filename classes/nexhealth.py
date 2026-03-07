@@ -4,6 +4,7 @@ from typing import NotRequired
 from typing import Sequence
 from typing import TypedDict
 
+type NexHealthGender = Literal["Female", "Male", "Other"]
 type NexHealthIncludeAppointmentQueryValue = Literal[
     "operatory",
     "patient",

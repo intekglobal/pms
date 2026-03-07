@@ -13,13 +13,13 @@ type LocalConfig = LocalParams
 type NexHealthConfig = NexHealthParams
 
 
-class PMSAbstractBaseClass(metaclass=ABCMeta):
+class PMSAbstractBaseClass[C = LocalConfig | NexHealthConfig](metaclass=ABCMeta):
     @classmethod
     @abstractmethod
     def get_patients(
         cls,
         *,
-        configuration: NexHealthConfig | LocalConfig,
+        configuration: C,
         date_of_birth: str | None = None,
         per_page: int = PER_PAGE,
         phone_number: str | None = None,
