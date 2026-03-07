@@ -24,6 +24,46 @@ bad_request_message = "Bad request; please check your call and then try again"
 local_configuration_error_message = "Configuration type currently not supported"
 
 
+@app.post("/appointment_slots")
+async def get_appointment_slots(
+    days: int,
+    lids: Annotated[Sequence[int], Query()],
+    pids: Annotated[Sequence[int], Query()],
+    start_date: str,
+    x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
+    appointment_type_id: int | None = None,
+    configuration: Annotated[RequestConfiguration | None, Body(embed=True)] = None,
+    operatory_ids: Annotated[Sequence[int] | None, Query()] = None,
+    overlapping_operatory_slots: bool | None = None,
+    slot_interval: int | None = None,
+    slot_length: int | None = None,
+    subdomain: str | None = None,
+):
+    # TODO: Enable `Local` configuration
+    if configuration:
+        params = configuration.params
+
+        if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+            raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+    else:
+        params = None
+
+    get_appointment_slots_response = NexHealthSDK.get_appointment_slots(
+        appointment_type_id=appointment_type_id,
+        configuration=params,
+        days=days,
+        lids=lids,
+        operatory_ids=operatory_ids,
+        overlapping_operatory_slots=overlapping_operatory_slots,
+        pids=pids,
+        slot_interval=slot_interval,
+        slot_length=slot_length,
+        start_date=start_date,
+        subdomain=subdomain,
+    )
+    return get_appointment_slots_response
+
+
 @app.post("/appointments")
 async def get_appointments(
     configuration: Annotated[RequestConfiguration, Body(embed=True)],

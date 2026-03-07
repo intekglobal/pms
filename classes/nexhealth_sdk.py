@@ -477,6 +477,74 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         return get_appointment_response_data["data"]
 
     @classmethod
+    def get_appointment_slots(
+        cls,
+        *,
+        appointment_type_id: int | None = None,
+        configuration: NexHealthConfig | None = None,
+        days: int,
+        lids: Sequence[int],
+        operatory_ids: Sequence[int] | None = None,
+        # defaults to `False` in `NexHealth`
+        overlapping_operatory_slots: bool | None = None,
+        pids: Sequence[int],
+        slot_interval: int | None = None,
+        slot_length: int | None = None,  # defaults to 15 minutes in `NexHealth`
+        start_date: str,
+        subdomain: str | None = None,
+    ):
+        _, c_subdomain = compute_subdomain_and_location_id(
+            configuration=configuration, subdomain=subdomain
+        )
+
+        if c_subdomain is None:
+            print("Error: `subdomain` missing.")
+            raise HTTPException(
+                HTTP_400_BAD_REQUEST, "Error retrieving appointment slots"
+            )
+
+        headers = cls.generate_headers()
+        generated_url = cls.__generate_url(
+            path="/appointment_slots", subdomain=c_subdomain
+        )
+        url = f"{generated_url}&days={days}&start_date={start_date}"
+
+        for lid in lids:
+            url = f"{url}&lids[]={lid}"
+        for pid in pids:
+            url = f"{url}&pids[]={pid}"
+
+        if appointment_type_id:
+            url = f"{url}&appointment_type_id={appointment_type_id}"
+        if operatory_ids:
+            for operatory_id in operatory_ids:
+                url = f"{url}&operatory_ids[]={operatory_id}"
+        if overlapping_operatory_slots is not None:
+            url = f"{url}&overlapping_operatory_slots={stringify_bool(overlapping_operatory_slots)}"
+        if slot_interval:
+            url = f"{url}&slot_interval={slot_interval}"
+        if slot_length:
+            url = f"{url}&slot_length={slot_length}"
+
+        get_appointment_slots_response = requests.get(url, headers=headers)
+        get_appointment_slots_response_data = get_appointment_slots_response.json()
+        get_appointment_slots_response_status_code = (
+            get_appointment_slots_response.status_code
+        )
+
+        if get_appointment_slots_response_status_code != 200:
+            print("Error retrieving appointment slots")
+            print(f"Response status code: {get_appointment_slots_response_status_code}")
+
+            if get_appointment_slots_response_status_code in [400, 401, 403, 500]:
+                print(f"Response data: {get_appointment_slots_response_data}")
+                print(f"Error: {get_appointment_slots_response_data['error'][0]}")
+            else:
+                print(f"Error: {get_appointment_slots_response_data}")
+        print(f"get appointment slots data: {get_appointment_slots_response_data}")
+        return get_appointment_slots_response_data["data"]
+
+    @classmethod
     def get_appointments(
         cls,
         *,
