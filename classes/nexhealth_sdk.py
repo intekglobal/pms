@@ -8,6 +8,15 @@ from typing import Mapping
 from typing import Sequence
 
 # local modules
+from classes.nexhealth import BaseNexHealthPatient
+from classes.nexhealth import NexHealthAppointment
+from classes.nexhealth import NexHealthGender
+from classes.nexhealth import NexHealthIncludeAppointmentQuery
+from classes.nexhealth import NexHealthIncludePatientQuery
+from classes.nexhealth import NexHealthPatient
+from classes.nexhealth import NexHealthSubscriptionFeature
+from classes.request import GetPatientsResponse
+from classes.request import GetAppointmentsResponse
 from ehr_abs_class import NexHealthConfig
 from ehr_abs_class import PER_PAGE
 from ehr_abs_class import PMSAbstractBaseClass
@@ -16,16 +25,6 @@ from lib.utilities import generate_pms_appointments
 from lib.utilities import generate_pms_patient
 from lib.utilities import generate_pms_patients
 from settings import settings
-from .nexhealth import BaseNexHealthPatient
-from .nexhealth import NexHealthAppointment
-from .nexhealth import NexHealthGender
-from .nexhealth import NexHealthIncludeAppointmentQuery
-from .nexhealth import NexHealthIncludePatientQuery
-from .nexhealth import NexHealthPatient
-from .nexhealth import NexHealthSubscriptionFeature
-from .request import GetPatientsResponse
-from .request import GetAppointmentsResponse
-from .request import NexHealthParams
 
 
 def stringify_bool(arg: bool) -> Literal["false", "true"]:
@@ -589,15 +588,15 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         if nex_only is not None:
             url = f"{url}&nex_only={nex_only}"
         if operatory_ids:
-            for value in operatory_ids:
-                url = f"{url}&operatory_ids[]={value}"
+            for operatory_id in operatory_ids:
+                url = f"{url}&operatory_ids[]={operatory_id}"
         if page:
             url = f"{url}&page={page}"
         if patient_id:
             url = f"{url}&patient_id={patient_id}"
         if provider_ids:
-            for value in provider_ids:
-                url = f"{url}&provider_ids[]={value}"
+            for provider_id in provider_ids:
+                url = f"{url}&provider_ids[]={provider_id}"
         if timezone:
             url = f"{url}&timezone={timezone}"
         if unavailable is not None:
