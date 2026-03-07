@@ -197,6 +197,7 @@ async def create_availability(
     end_time: Annotated[str, Body()],
     operatory_id: Annotated[int, Body()],
     provider_id: Annotated[int, Body()],
+    x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
     appointment_type_ids: Sequence[int] | None = None,
     specific_date: Annotated[str | None, Body()] = None,
 ):
