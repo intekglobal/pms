@@ -12,6 +12,7 @@ type NexHealthIncludeAppointmentQueryValue = Literal[
 ]
 type NexHealthIncludePatientQueryValue = Literal[
     "adjustments",
+    "procedures",
     "upcoming_appts",
 ]
 type NexHealthIncludeAppointmentQuery = Sequence[NexHealthIncludeAppointmentQueryValue]
@@ -91,6 +92,7 @@ class NexHealthAppointment(BaseNexHealthAppointment):
 
 class NexHealthPatient(BaseNexHealthPatient):
     adjustments: NotRequired[Sequence[Dict]]
+    procedures: NotRequired[Sequence[Dict] | None]
     provider_id: int
     upcoming_appts: NotRequired[Sequence[Dict]]
 
