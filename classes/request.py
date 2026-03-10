@@ -11,7 +11,7 @@ from classes.pms import Patient
 
 class GetAppointmentsResponse(BaseModel):
     count: int
-    data: Sequence[Appointment | NexHealthAppointment]
+    data: Sequence[Appointment] | Sequence[NexHealthAppointment]
 
 
 class GetPatientsResponse(BaseModel):
