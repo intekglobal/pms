@@ -3,10 +3,10 @@ from typing import Literal
 from typing import Sequence
 
 # Local packages
-from .nexhealth import NexHealthAppointment
-from .nexhealth import NexHealthPatient
-from .pms import Appointment
-from .pms import Patient
+from classes.nexhealth import NexHealthAppointment
+from classes.nexhealth import NexHealthPatient
+from classes.pms import Appointment
+from classes.pms import Patient
 
 
 class GetAppointmentsResponse(BaseModel):

@@ -15,8 +15,8 @@ from classes.nexhealth import NexHealthIncludeAppointmentQuery
 from classes.nexhealth import NexHealthIncludePatientQuery
 from classes.nexhealth import NexHealthPatient
 from classes.nexhealth import NexHealthSubscriptionFeature
-from classes.request import GetPatientsResponse
 from classes.request import GetAppointmentsResponse
+from classes.request import GetPatientsResponse
 from ehr_abs_class import NexHealthConfig
 from ehr_abs_class import PER_PAGE
 from ehr_abs_class import PMSAbstractBaseClass
