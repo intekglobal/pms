@@ -66,18 +66,19 @@ async def get_appointment_slots(
 
 @app.post("/appointments")
 async def get_appointments(
-    configuration: Annotated[RequestConfiguration, Body(embed=True)],
     end_date: str,
     start_date: str,
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
     appointment_type_id: int | None = None,
     cancelled: bool | None = None,
+    configuration: Annotated[RequestConfiguration | None, Body(embed=True)] = None,
     created_by: str | None = None,
     foreign_id: str | None = None,
     include: Annotated[
         Sequence[NexHealthIncludeAppointmentQueryValue] | None,
         Query(),
     ] = None,
+    location_id: int | None = None,
     nex_only: bool | None = None,
     operatory_ids: Annotated[Sequence[int] | None, Query()] = None,
     page: int | None = None,
@@ -85,15 +86,19 @@ async def get_appointments(
     per_page: int = PER_PAGE,
     provider_ids: Annotated[Sequence[int] | None, Query()] = None,
     raw_response: bool = False,
+    subdomain: str | None = None,
     timezone: str | None = None,
     unavailable: bool | None = None,
     updated_since: str | None = None,
 ):
-    params = configuration.params
+    if configuration:
+        params = configuration.params
 
-    # TODO: Enable `Local` configuration
-    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
-        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+        # TODO: Enable `Local` configuration
+        if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+            raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+    else:
+        params = None
 
     get_appointments_response = NexHealthSDK.get_appointments(
         appointment_type_id=appointment_type_id,
@@ -103,6 +108,7 @@ async def get_appointments(
         end=end_date,
         foreign_id=foreign_id,
         include=include,
+        location_id=location_id,
         nex_only=nex_only,
         operatory_ids=operatory_ids,
         page=page,
@@ -111,6 +117,7 @@ async def get_appointments(
         provider_ids=provider_ids,
         raw_response=raw_response,
         start=start_date,
+        subdomain=subdomain,
         timezone=timezone,
         unavailable=unavailable,
         updated_since=updated_since,
@@ -120,44 +127,56 @@ async def get_appointments(
 
 @app.post("/cancel_appointment/{id}")
 async def cancel_appointment(
-    configuration: Annotated[RequestConfiguration, Body(embed=True)],
     id: int,
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
+    configuration: Annotated[RequestConfiguration | None, Body(embed=True)] = None,
+    subdomain: str | None = None,
 ):
-    params = configuration.params
+    if configuration:
+        params = configuration.params
 
-    # TODO: Enable `Local` configuration
-    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
-        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+        # TODO: Enable `Local` configuration
+        if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+            raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+    else:
+        params = None
 
     patch_appointment_response = NexHealthSDK.patch_appointment(
-        cancel=True, configuration=params, id=id
+        cancel=True,
+        configuration=params,
+        id=id,
+        subdomain=subdomain,
     )
     return patch_appointment_response
 
 
 @app.post("/create_appointment")
 async def create_appointment(
-    configuration: RequestConfiguration,
     operatory_id: Annotated[int, Body()],
     patient_id: Annotated[int, Body()],
     start_time: Annotated[str, Body()],
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
     appointment_type_id: Annotated[int | None, Body()] = None,
+    configuration: RequestConfiguration | None = None,
     descriptor_ids: Sequence[int] | None = None,
     end_time: Annotated[str | None, Body()] = None,
+    location_id: int | None = None,
     note: Annotated[str | None, Body()] = None,
     provider_id: Annotated[int | None, Body()] = None,
+    subdomain: str | None = None,
 ):
-    params = configuration.params
+    if configuration:
+        params = configuration.params
 
-    # TODO: Enable `Local` configuration
-    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
-        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+        # TODO: Enable `Local` configuration
+        if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+            raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
 
-    # `c_` prefix stands for **calculated**
-    c_provider_id = provider_id if provider_id else params.default_provider_id
-
+        # `c_` prefix stands for **calculated**
+        c_provider_id = provider_id if provider_id else params.default_provider_id
+    else:
+        c_provider_id = provider_id
+        params = None
     if c_provider_id is None:
         print("Error: No provider ID was provided")
         raise HTTPException(
@@ -170,11 +189,13 @@ async def create_appointment(
         configuration=params,
         descriptor_ids=descriptor_ids,
         end_time=end_time,
+        location_id=location_id,
         note=note,
         operatory_id=operatory_id,
         patient_id=patient_id,
         provider_id=c_provider_id,
         start_time=start_time,
+        subdomain=subdomain,
     )
     return appointment_result
 
@@ -182,7 +203,6 @@ async def create_appointment(
 @app.post("/create_availability")
 async def create_availability(
     begin_time: Annotated[str, Body()],
-    configuration: Annotated[RequestConfiguration, Body()],
     days: Sequence[
         Literal[
             "Sunday",
@@ -199,13 +219,19 @@ async def create_availability(
     provider_id: Annotated[int, Body()],
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
     appointment_type_ids: Sequence[int] | None = None,
+    configuration: Annotated[RequestConfiguration | None, Body()] = None,
+    location_id: int | None = None,
     specific_date: Annotated[str | None, Body()] = None,
+    subdomain: str | None = None,
 ):
-    params = configuration.params
+    if configuration:
+        params = configuration.params
 
-    # TODO: Enable `Local` configuration
-    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
-        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+        # TODO: Enable `Local` configuration
+        if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+            raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+    else:
+        params = None
 
     create_availability_response = NexHealthSDK.create_availability(
         appointment_type_ids=appointment_type_ids,
@@ -213,9 +239,11 @@ async def create_availability(
         configuration=params,
         days=days,
         end_time=end_time,
+        location_id=location_id,
         operatory_id=operatory_id,
         provider_id=provider_id,
         specific_date=specific_date,
+        subdomain=subdomain,
     )
     return create_availability_response
 
@@ -253,6 +281,7 @@ async def create_patient(
     if configuration:
         params = configuration.params
 
+        # TODO: Enable `Local` configuration
         if configuration.type == "Local" or not isinstance(params, NexHealthParams):
             raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
 
@@ -325,28 +354,36 @@ async def get_locations(
 
 @app.post("/operatories")
 async def get_operatories(
-    configuration: Annotated[RequestConfiguration, Body(embed=True)],
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
+    configuration: Annotated[RequestConfiguration | None, Body(embed=True)] = None,
+    location_id: int | None = None,
     search_name: str | None = None,
+    subdomain: str | None = None,
 ):
-    params = configuration.params
+    if configuration:
+        params = configuration.params
 
-    # TODO: Enable `Local` configuration
-    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
-        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+        # TODO: Enable `Local` configuration
+        if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+            raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+    else:
+        params = None
 
     get_operatories_response = NexHealthSDK.get_operatories(
-        configuration=params, search_name=search_name
+        configuration=params,
+        location_id=location_id,
+        search_name=search_name,
+        subdomain=subdomain,
     )
     return get_operatories_response
 
 
 @app.post("/patients")
 async def get_patients(
-    configuration: Annotated[RequestConfiguration, Body(embed=True)],
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
     appointment_date_end: str | None = None,
     appointment_date_start: str | None = None,
+    configuration: Annotated[RequestConfiguration | None, Body(embed=True)] = None,
     date_of_birth: str | None = None,
     email: str | None = None,
     foreign_id: str | None = None,
@@ -355,6 +392,7 @@ async def get_patients(
         Sequence[NexHealthIncludePatientQueryValue] | None,
         Query(),
     ] = None,
+    location_id: int | None = None,
     name: str | None = None,
     non_patient: bool = False,
     location_strict: bool | None = None,
@@ -362,13 +400,17 @@ async def get_patients(
     per_page: int = PER_PAGE,
     phone_number: str | None = None,
     raw_response: bool = False,
+    subdomain: str | None = None,
     updated_since: str | None = None,
 ):
-    params = configuration.params
+    if configuration:
+        params = configuration.params
 
-    # TODO: Enable `Local` configuration
-    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
-        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+        # TODO: Enable `Local` configuration
+        if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+            raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+    else:
+        params = None
 
     patients = NexHealthSDK.get_patients(
         appointment_date_end=appointment_date_end,
@@ -379,6 +421,7 @@ async def get_patients(
         foreign_id=foreign_id,
         inactive=inactive,
         include=include,
+        location_id=location_id,
         location_strict=location_strict,
         name=name,
         non_patient=non_patient,
@@ -386,6 +429,7 @@ async def get_patients(
         per_page=per_page,
         phone_number=phone_number,
         raw_response=raw_response,
+        subdomain=subdomain,
         updated_since=updated_since,
     )
     return patients
@@ -393,40 +437,52 @@ async def get_patients(
 
 @app.post("/providers")
 async def get_providers(
-    configuration: Annotated[RequestConfiguration, Body(embed=True)],
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
+    configuration: Annotated[RequestConfiguration | None, Body(embed=True)] = None,
+    location_id: int | None = None,
+    subdomain: str | None = None,
 ):
-    params = configuration.params
+    if configuration:
+        params = configuration.params
 
-    # TODO: Enable `Local` configuration
-    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
-        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+        # TODO: Enable `Local` configuration
+        if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+            raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+    else:
+        params = None
 
-    get_providers_response = NexHealthSDK.get_providers(configuration=params)
+    get_providers_response = NexHealthSDK.get_providers(
+        configuration=params, location_id=location_id, subdomain=subdomain
+    )
     return get_providers_response
 
 
 @app.post("/reschedule_appointment/{id}")
 async def reschedule_appointment(
-    configuration: Annotated[RequestConfiguration, Body()],
     id: int,
     operatory_id: Annotated[int, Body()],
     start_time: Annotated[str, Body()],
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
     appointment_type_id: Annotated[int | None, Body()] = None,
+    configuration: Annotated[RequestConfiguration | None, Body()] = None,
     descriptor_ids: Sequence[int] | None = None,
     end_time: Annotated[str | None, Body()] = None,
+    location_id: int | None = None,
     note: Annotated[str | None, Body()] = None,
     provider_id: Annotated[int | None, Body()] = None,
+    subdomain: str | None = None,
 ):
-    params = configuration.params
+    if configuration:
+        params = configuration.params
 
-    # TODO: Enable `Local` configuration
-    if configuration.type == "Local" or not isinstance(params, NexHealthParams):
-        raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
+        # TODO: Enable `Local` configuration
+        if configuration.type == "Local" or not isinstance(params, NexHealthParams):
+            raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
 
-    c_provider_id = provider_id if provider_id else params.default_provider_id
-
+        c_provider_id = provider_id if provider_id else params.default_provider_id
+    else:
+        c_provider_id = provider_id
+        params = None
     if c_provider_id is None:
         print("Error: No provider ID was provided")
         raise HTTPException(HTTP_400_BAD_REQUEST, bad_request_message)
@@ -441,10 +497,12 @@ async def reschedule_appointment(
         configuration=params,
         descriptor_ids=descriptor_ids,
         end_time=end_time,
+        location_id=location_id,
         note=note,
         operatory_id=operatory_id,
         patient_id=patch_appointment_response.patient_id,
         provider_id=c_provider_id,
         start_time=start_time,
+        subdomain=subdomain,
     )
     return create_appointment_response

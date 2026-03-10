@@ -97,16 +97,26 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         cls,
         *,
         appointment_type_id: int | None = None,
-        configuration: NexHealthConfig,
+        configuration: NexHealthConfig | None = None,
         descriptor_ids: Sequence[int] | None = None,
         end_time: str | None = None,
+        location_id: int | None = None,
         note: str | None = None,
         notify_patient: bool | None = None,  # Defaults to false in `NexHealth`
         operatory_id: int,
         patient_id: int,
         provider_id: int,
         start_time: str,  # HH:mm
+        subdomain: str | None = None,
     ):
+        c_location_id, c_subdomain = compute_subdomain_and_location_id(
+            configuration=configuration, location_id=location_id, subdomain=subdomain
+        )
+
+        if c_location_id is None or c_subdomain is None:
+            print("Error: `location_id` and/or `subdomain` missing")
+            raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating appointment")
+
         # TODO: Confirm the appointment is available, on a patient basis
         headers = cls.generate_headers(post_call=True)
         appt = {
@@ -119,9 +129,9 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             "appt": appt,
         }
         generated_url = cls.__generate_url(
-            location_id=configuration.location_id,
+            location_id=c_location_id,
             path="/appointments",
-            subdomain=configuration.subdomain,
+            subdomain=c_subdomain,
         )
         url = generated_url
 
@@ -237,10 +247,10 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
     def create_availability(
         cls,
         *,
-        configuration: NexHealthConfig,
         active: bool | None = None,  # Defaults to `True` in Nexhealth
         appointment_type_ids: Sequence[int] | None = None,
         begin_time: str,
+        configuration: NexHealthConfig | None = None,
         days: Sequence[
             Literal[
                 "Sunday",
@@ -253,15 +263,25 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             ]
         ],
         end_time: str,
+        location_id: int | None = None,
         operatory_id: int,
         provider_id: int,
         specific_date: str | None = None,
+        subdomain: str | None = None,
     ):
+        c_location_id, c_subdomain = compute_subdomain_and_location_id(
+            configuration=configuration, location_id=location_id, subdomain=subdomain
+        )
+
+        if c_location_id is None or c_subdomain is None:
+            print("Error: `location_id` and/or `subdomain` missing")
+            raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating availability")
+
         headers = cls.generate_headers(post_call=True)
         generated_url = cls.__generate_url(
-            location_id=configuration.location_id,
+            location_id=c_location_id,
             path="/availabilities",
-            subdomain=configuration.subdomain,
+            subdomain=c_subdomain,
         )
         availability = {
             "begin_time": begin_time,
@@ -272,7 +292,6 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         }
         data = {"availability": availability}
 
-        # if active != None:
         if active is not None:
             availability.update({"active": active})
         if appointment_type_ids:
@@ -549,11 +568,12 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         *,
         appointment_type_id: int | None = None,
         cancelled: bool | None = None,
-        configuration: NexHealthConfig,
+        configuration: NexHealthConfig | None = None,
         created_by: str | None = None,
         end: str,
         foreign_id: str | None = None,
         include: NexHealthIncludeAppointmentQuery | None = None,
+        location_id: int | None = None,
         nex_only: bool | None = None,
         operatory_ids: Sequence[int] | None = None,
         page: int | None = None,
@@ -562,15 +582,24 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         provider_ids: Sequence[int] | None = None,
         raw_response: bool = False,
         start: str,
+        subdomain: str | None = None,
         timezone: str | None = None,
         unavailable: bool | None = None,
         updated_since: str | None = None,
     ):
+        c_location_id, c_subdomain = compute_subdomain_and_location_id(
+            configuration=configuration, location_id=location_id, subdomain=subdomain
+        )
+
+        if c_location_id is None or c_subdomain is None:
+            print("Error: `location_id` and/or `subdomain` missing")
+            raise HTTPException(HTTP_400_BAD_REQUEST, "Error retrieving appointments")
+
         headers = cls.generate_headers()
         generated_url = cls.__generate_url(
-            location_id=configuration.location_id,
+            location_id=c_location_id,
             path="/appointments",
-            subdomain=configuration.subdomain,
+            subdomain=c_subdomain,
         )
         url = f"{generated_url}&end={end}&start={start}&per_page={per_page}"
 
@@ -821,14 +850,24 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
     def get_operatories(
         cls,
         *,
-        configuration: NexHealthConfig,
+        configuration: NexHealthConfig | None = None,
+        location_id: int | None = None,
         search_name: str | None = None,
+        subdomain: str | None = None,
     ):
+        c_location_id, c_subdomain = compute_subdomain_and_location_id(
+            configuration=configuration, location_id=location_id, subdomain=subdomain
+        )
+
+        if c_location_id is None or c_subdomain is None:
+            print("Error: `location_id` and/or `subdomain` missing")
+            raise HTTPException(HTTP_400_BAD_REQUEST, "Error retrieving operatories")
+
         headers = cls.generate_headers()
         generated_url = cls.__generate_url(
-            location_id=configuration.location_id,
+            location_id=c_location_id,
             path="/operatories",
-            subdomain=configuration.subdomain,
+            subdomain=c_subdomain,
         )
         url = generated_url
 
@@ -954,15 +993,25 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
     def get_providers(
         cls,
         *,
-        configuration: NexHealthConfig,
+        configuration: NexHealthConfig | None = None,
+        location_id: int | None = None,
         per_page: int = PER_PAGE,
         requestable: bool | None = None,
+        subdomain: str | None = None,
     ):
+        c_location_id, c_subdomain = compute_subdomain_and_location_id(
+            configuration=configuration, location_id=location_id, subdomain=subdomain
+        )
+
+        if c_location_id is None or c_subdomain is None:
+            print("Error: `location_id` and/or `subdomain` missing")
+            raise HTTPException(HTTP_400_BAD_REQUEST, "Error retrieving providers")
+
         headers = cls.generate_headers()
         generated_url = cls.__generate_url(
-            location_id=configuration.location_id,
+            location_id=c_location_id,
             path="/providers",
-            subdomain=configuration.subdomain,
+            subdomain=c_subdomain,
         )
         url = f"{generated_url}&per_page={per_page}"
 
@@ -995,17 +1044,26 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         *,
         cancel: bool | None = None,
         check_in_at: str | None = None,
-        configuration: NexHealthConfig,
+        configuration: NexHealthConfig | None = None,
         confirm: Literal[True] | None = None,
         id: int,
+        subdomain: str | None = None,
     ):
         if cancel is None and check_in_at is None and (confirm is None or not confirm):
             print("Error: no patch was action provided")
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error processing appointment")
 
+        _, c_subdomain = compute_subdomain_and_location_id(
+            configuration=configuration, subdomain=subdomain
+        )
+
+        if c_subdomain is None:
+            print("Error: `subdomain` missing")
+            raise HTTPException(HTTP_400_BAD_REQUEST, "Error processing appointment")
+
         headers = cls.generate_headers(post_call=True)
         generated_url = cls.__generate_url(
-            path=f"/appointments/{id}", subdomain=configuration.subdomain
+            path=f"/appointments/{id}", subdomain=c_subdomain
         )
 
         # explicitly typed to avoid typing errors
