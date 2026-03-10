@@ -480,10 +480,16 @@ async def reschedule_appointment(
     configuration: Annotated[RequestConfiguration | None, Body()] = None,
     descriptor_ids: Sequence[int] | None = None,
     end_time: Annotated[str | None, Body()] = None,
+    is_guardian: Annotated[bool | None, Body()] = None,
+    is_new_clients_patient: Annotated[bool | None, Body()] = None,
     location_id: int | None = None,
     note: Annotated[str | None, Body()] = None,
+    notify_patient: bool | None = None,
+    patient: NexHealthGuardianPatient | None = None,
     provider_id: Annotated[int | None, Body()] = None,
+    referrer: Annotated[str | None, Body()] = None,
     subdomain: str | None = None,
+    unavailable: Annotated[bool | None, Body()] = None,
 ):
     if configuration:
         params = configuration.params
@@ -510,12 +516,18 @@ async def reschedule_appointment(
         configuration=params,
         descriptor_ids=descriptor_ids,
         end_time=end_time,
+        is_guardian=is_guardian,
+        is_new_clients_patient=is_new_clients_patient,
         location_id=location_id,
         note=note,
+        notify_patient=notify_patient,
         operatory_id=operatory_id,
+        patient=patient,
         patient_id=patch_appointment_response.patient_id,
         provider_id=c_provider_id,
+        referrer=referrer,
         start_time=start_time,
         subdomain=subdomain,
+        unavailable=unavailable,
     )
     return create_appointment_response
