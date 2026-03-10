@@ -327,6 +327,7 @@ async def get_locations(
 async def get_operatories(
     configuration: Annotated[RequestConfiguration, Body(embed=True)],
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
+    search_name: str | None = None,
 ):
     params = configuration.params
 
@@ -334,7 +335,9 @@ async def get_operatories(
     if configuration.type == "Local" or not isinstance(params, NexHealthParams):
         raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
 
-    get_operatories_response = NexHealthSDK.get_operatories(configuration=params)
+    get_operatories_response = NexHealthSDK.get_operatories(
+        configuration=params, search_name=search_name
+    )
     return get_operatories_response
 
 
