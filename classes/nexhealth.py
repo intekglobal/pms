@@ -10,13 +10,27 @@ type NexHealthIncludeAppointmentQueryValue = Literal[
     "patient",
     "procedures",
 ]
+type NexHealthIncludeAppointmentQuery = Sequence[NexHealthIncludeAppointmentQueryValue]
 type NexHealthIncludePatientQueryValue = Literal[
     "adjustments",
     "procedures",
     "upcoming_appts",
 ]
-type NexHealthIncludeAppointmentQuery = Sequence[NexHealthIncludeAppointmentQueryValue]
 type NexHealthIncludePatientQuery = Sequence[NexHealthIncludePatientQueryValue]
+type NexHealthSubscriptionFeature = Literal[
+    "campaigns",
+    "enterprise",
+    "forms",
+    "insurance_verification",
+    "ledger_sync",
+    "messaging",
+    "online_booking",
+    "payments",
+    "recalls",
+    "reminders",
+    "reviews",
+    "waitlist",
+]
 
 
 class BaseNexHealthAppointment(TypedDict):
@@ -30,20 +44,20 @@ class BaseNexHealthAppointment(TypedDict):
 
 
 class Bio(TypedDict):
-    city: NotRequired[str]
-    state: NotRequired[str]
-    gender: NotRequired[Literal["Female", "Male"] | None]
+    city: NotRequired[str | None]
+    state: NotRequired[str | None]
+    gender: NotRequired[NexHealthGender | None]
     zip_code: NotRequired[int | None]
     new_patient: bool
     non_patient: bool
     phone_number: str
     date_of_birth: str
-    address_line_1: NotRequired[str]
-    address_line_2: NotRequired[str]
-    street_address: NotRequired[str]
-    cell_phone_number: NotRequired[str]
-    home_phone_number: NotRequired[str]
-    work_phone_number: NotRequired[str]
+    address_line_1: NotRequired[str | None]
+    address_line_2: NotRequired[str | None]
+    street_address: NotRequired[str | None]
+    cell_phone_number: NotRequired[str | None]
+    home_phone_number: NotRequired[str | None]
+    work_phone_number: NotRequired[str | None]
     previous_foreign_id: NotRequired[str | None]
 
 
@@ -80,10 +94,10 @@ class NexHealthAppointment(BaseNexHealthAppointment):
     institution_id: int
     foreign_id: str | None
     foreign_id_type: str | Literal["nex"]
-    operatory: NotRequired[Dict]
+    operatory: NotRequired[Dict | None]
     patient_confirmed: bool
-    patient: NotRequired[BaseNexHealthPatient]
-    procedures: NotRequired[Sequence[Dict]]
+    patient: NotRequired[BaseNexHealthPatient | None]
+    procedures: NotRequired[Sequence[Dict] | None]
     created_by_user_id: int | None
     is_guardian: bool
     operatory_id: int | None
@@ -91,23 +105,7 @@ class NexHealthAppointment(BaseNexHealthAppointment):
 
 
 class NexHealthPatient(BaseNexHealthPatient):
-    adjustments: NotRequired[Sequence[Dict]]
+    adjustments: NotRequired[Sequence[Dict] | None]
     procedures: NotRequired[Sequence[Dict] | None]
     provider_id: int
-    upcoming_appts: NotRequired[Sequence[Dict]]
-
-
-type NexHealthSubscriptionFeature = Literal[
-    "campaigns",
-    "enterprise",
-    "forms",
-    "insurance_verification",
-    "ledger_sync",
-    "messaging",
-    "online_booking",
-    "payments",
-    "recalls",
-    "reminders",
-    "reviews",
-    "waitlist",
-]
+    upcoming_appts: NotRequired[Sequence[BaseNexHealthAppointment] | None]
