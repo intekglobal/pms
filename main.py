@@ -11,8 +11,8 @@ from typing import Sequence
 # Local import
 from classes.nexhealth import NexHealthIncludeAppointmentQueryValue
 from classes.nexhealth import NexHealthIncludePatientQueryValue
-from classes.nexhealth import NexHealthSubscriptionFeature
 from classes.nexhealth import NexHealthGender
+from classes.nexhealth import NexHealthSubscriptionFeature
 from classes.nexhealth_sdk import NexHealthSDK
 from classes.request import NexHealthParams
 from classes.request import RequestConfiguration
