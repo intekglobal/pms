@@ -891,6 +891,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         )
         url = f"{generated_url}&per_page={per_page}"
         url = f"{url}&inactive={stringify_bool(inactive)}"
+        url = f"{url}&non_patient={stringify_bool(non_patient)}"
 
         if appointment_date_end:
             url = f"{url}&appointment_date_end={appointment_date_end}"
@@ -909,8 +910,6 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             url = f"{url}&location_strict={stringify_bool(location_strict)}"
         if name:
             url = f"{url}&name={name}"
-        if non_patient is not None:
-            url = f"{url}&non_patient={stringify_bool(non_patient)}"
         if page:
             url = f"{url}&page={page}"
         if phone_number:
