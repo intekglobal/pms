@@ -33,6 +33,16 @@ type NexHealthSubscriptionFeature = Literal[
 ]
 
 
+class BaseBaseNexHealthPatient(TypedDict):
+    first_name: str
+    last_name: str
+
+
+class BaseBio(TypedDict):
+    date_of_birth: str
+    gender: NotRequired[NexHealthGender | None]
+
+
 class BaseNexHealthAppointment(TypedDict):
     confirmed: bool
     end_time: str
@@ -43,15 +53,13 @@ class BaseNexHealthAppointment(TypedDict):
     start_time: str
 
 
-class Bio(TypedDict):
+class Bio(BaseBio):
     city: NotRequired[str | None]
     state: NotRequired[str | None]
-    gender: NotRequired[NexHealthGender | None]
     zip_code: NotRequired[int | None]
     new_patient: bool
     non_patient: bool
     phone_number: str
-    date_of_birth: str
     address_line_1: NotRequired[str | None]
     address_line_2: NotRequired[str | None]
     street_address: NotRequired[str | None]
@@ -61,12 +69,10 @@ class Bio(TypedDict):
     previous_foreign_id: NotRequired[str | None]
 
 
-class BaseNexHealthPatient(TypedDict):
+class BaseNexHealthPatient(BaseBaseNexHealthPatient):
     id: int
     email: str | None
-    first_name: str
     middle_name: str | None
-    last_name: str
     name: str
     created_at: str
     updated_at: str
@@ -102,6 +108,10 @@ class NexHealthAppointment(BaseNexHealthAppointment):
     is_guardian: bool
     operatory_id: int | None
     timezone_offset: str
+
+
+class NexHealthGuardianPatient(BaseBaseNexHealthPatient):
+    bio: BaseBio
 
 
 class NexHealthPatient(BaseNexHealthPatient):
