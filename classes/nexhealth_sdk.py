@@ -11,6 +11,7 @@ from typing import Sequence
 from classes.nexhealth import BaseNexHealthPatient
 from classes.nexhealth import NexHealthAppointment
 from classes.nexhealth import NexHealthGender
+from classes.nexhealth import NexHealthGuardianPatient
 from classes.nexhealth import NexHealthIncludeAppointmentQuery
 from classes.nexhealth import NexHealthIncludePatientQuery
 from classes.nexhealth import NexHealthPatient
@@ -100,15 +101,21 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         configuration: NexHealthConfig | None = None,
         descriptor_ids: Sequence[int] | None = None,
         end_time: str | None = None,
+        is_guardian: bool | None = None,
+        is_new_clients_patient: bool | None = None,
         location_id: int | None = None,
         note: str | None = None,
         notify_patient: bool | None = None,  # Defaults to false in `NexHealth`
         operatory_id: int,
-        patient_id: int,
+        patient: NexHealthGuardianPatient | None = None,
+        patient_id: int | None = None,
         provider_id: int,
+        referrer: str | None = None,
         start_time: str,  # HH:mm
         subdomain: str | None = None,
+        unavailable: bool | None = None,
     ):
+        # TODO: Confirm the appointment is available, on a patient basis
         c_location_id, c_subdomain = compute_subdomain_and_location_id(
             configuration=configuration, location_id=location_id, subdomain=subdomain
         )
@@ -117,14 +124,48 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             print("Error: `location_id` and/or `subdomain` missing")
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating appointment")
 
-        # TODO: Confirm the appointment is available, on a patient basis
-        headers = cls.generate_headers(post_call=True)
-        appt = {
+        appt: Dict = {
             "operatory_id": operatory_id,
-            "patient_id": patient_id,
             "provider_id": provider_id,
             "start_time": start_time,
         }
+
+        # # `is_guardian` validation
+        if is_guardian is not None:
+            if not is_guardian:
+                appt.update({"is_guardian": is_guardian})
+            # if `is_guardian` is set, `patient` most be provided
+            elif patient is None:
+                print("Error: `is_guardian` was set but `patient` is missing")
+                raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating appointment")
+            else:
+                appt.update(
+                    {
+                        "is_guardian": is_guardian,
+                        "patient": patient,
+                    }
+                )
+        # # `patient_id` handling
+        # when an appointment is set as `unavailable`, the `patient_id` is not
+        # required
+        if unavailable:
+            appt.update({"unavailable": unavailable})
+        # otherwise, it has to be provided
+        elif patient_id is None:
+            print("Error: `patient_id` is missing")
+            raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating appointment")
+        else:
+            appt.update({"patient_id": patient_id})
+
+            # This validation seems unnecessary, but it is kept for completeness
+            if unavailable is not None:
+                appt.update({"unavailable": unavailable})
+        if is_new_clients_patient is not None:
+            appt.update({"is_new_clients_patient": is_new_clients_patient})
+        if referrer:
+            appt.update({"referrer": referrer})
+
+        headers = cls.generate_headers(post_call=True)
         data = {
             "appt": appt,
         }
@@ -144,7 +185,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         if note:
             appt.update({"note": note})
         if notify_patient is not None:
-            url = f"{url}&notify_patient={notify_patient}"
+            url = f"{url}&notify_patient={stringify_bool(notify_patient)}"
 
         create_appointment_response = requests.post(url, headers=headers, json=data)
         create_appointment_response_data = create_appointment_response.json()
