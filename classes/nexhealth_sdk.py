@@ -737,6 +737,40 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         return get_appointment_types_response_data["data"]
 
     @classmethod
+    def get_location_appointment_descriptors(
+        cls, location_id: int, descriptor_type: str | None = None
+    ):
+        url = (
+            f"{settings.nexhealth_url}/locations/{location_id}/appointment_descriptors"
+        )
+
+        if descriptor_type:
+            url = f"{url}?descriptor_type={descriptor_type}"
+
+        headers = cls.generate_headers()
+        location_appointment_descriptors_response = requests.get(url, headers=headers)
+        location_appointment_descriptors_response_data = (
+            location_appointment_descriptors_response.json()
+        )
+        location_appointment_descriptors_response_status_code = (
+            location_appointment_descriptors_response.status_code
+        )
+
+        if location_appointment_descriptors_response_status_code != 200:
+            print(
+                f"Error retrieving location appointment descriptors: {location_appointment_descriptors_response_data}"
+            )
+            raise HTTPException(
+                location_appointment_descriptors_response_status_code,
+                "Error retrieving location appointment descriptors",
+            )
+
+        print(
+            f"location appointment descriptors response data: {location_appointment_descriptors_response_data}"
+        )
+        return location_appointment_descriptors_response_data["data"]
+
+    @classmethod
     def get_locations(
         cls,
         *,
@@ -955,40 +989,6 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             )
         print(f"get providers response data: {get_providers_response_data}")
         return get_providers_response_data["data"]
-
-    @classmethod
-    def get_location_appointment_descriptors(
-        cls, location_id: int, descriptor_type: str | None = None
-    ):
-        url = (
-            f"{settings.nexhealth_url}/locations/{location_id}/appointment_descriptors"
-        )
-
-        if descriptor_type:
-            url = f"{url}?descriptor_type={descriptor_type}"
-
-        headers = cls.generate_headers()
-        location_appointment_descriptors_response = requests.get(url, headers=headers)
-        location_appointment_descriptors_response_data = (
-            location_appointment_descriptors_response.json()
-        )
-        location_appointment_descriptors_response_status_code = (
-            location_appointment_descriptors_response.status_code
-        )
-
-        if location_appointment_descriptors_response_status_code != 200:
-            print(
-                f"Error retrieving location appointment descriptors: {location_appointment_descriptors_response_data}"
-            )
-            raise HTTPException(
-                location_appointment_descriptors_response_status_code,
-                "Error retrieving location appointment descriptors",
-            )
-
-        print(
-            f"location appointment descriptors response data: {location_appointment_descriptors_response_data}"
-        )
-        return location_appointment_descriptors_response_data["data"]
 
     @classmethod
     def patch_appointment(
