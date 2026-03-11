@@ -10,14 +10,15 @@ from typing import Sequence
 # local modules
 from classes.nexhealth import BaseNexHealthPatient
 from classes.nexhealth import NexHealthAppointment
-from classes.nexhealth import NexHealthGender
+from classes.nexhealth import NexHealthAvailability
 from classes.nexhealth import NexHealthGuardianPatient
-from classes.nexhealth import NexHealthIncludeAppointmentQuery
-from classes.nexhealth import NexHealthIncludePatientQuery
 from classes.nexhealth import NexHealthPatient
-from classes.nexhealth import NexHealthSubscriptionFeature
+from classes.request import GetAppointmentSlotsResponse
 from classes.request import GetAppointmentsResponse
+from classes.request import GetLocationsResponse
+from classes.request import GetOperatoriesResponse
 from classes.request import GetPatientsResponse
+from classes.request import GetProvidersResponse
 from ehr_abs_class import NexHealthConfig
 from ehr_abs_class import PER_PAGE
 from ehr_abs_class import PMSAbstractBaseClass
@@ -26,6 +27,12 @@ from lib.utilities import generate_pms_appointments
 from lib.utilities import generate_pms_patient
 from lib.utilities import generate_pms_patients
 from settings import settings
+from type_definitions.miscellaneous_types import DayType
+from type_definitions.miscellaneous_types import GenderType
+from type_definitions.nexhealth_types import NexHealthIncludeAppointmentQueryType
+from type_definitions.nexhealth_types import NexHealthIncludePatientQueryType
+from type_definitions.nexhealth_types import NexHealthParentType
+from type_definitions.nexhealth_types import NexHealthSubscriptionFeatureType
 
 
 def stringify_bool(arg: bool) -> Literal["false", "true"]:
@@ -225,9 +232,8 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         location_id: int | None = None,
         minutes=30,
         name: str,
-        parent_type: (
-            Literal["Institution", "Location"] | None
-        ) = None,  # Defaults to "Institution" in Nexhealth
+        # Defaults to "Institution" in Nexhealth
+        parent_type: NexHealthParentType | None = None,
         subdomain: str,
     ):
         headers = cls.generate_headers(post_call=True)
@@ -292,24 +298,14 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         appointment_type_ids: Sequence[int] | None = None,
         begin_time: str,
         configuration: NexHealthConfig | None = None,
-        days: Sequence[
-            Literal[
-                "Sunday",
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-            ]
-        ],
+        days: Sequence[DayType],
         end_time: str,
         location_id: int | None = None,
         operatory_id: int,
         provider_id: int,
         specific_date: str | None = None,
         subdomain: str | None = None,
-    ):
+    ) -> NexHealthAvailability:
         c_location_id, c_subdomain = compute_subdomain_and_location_id(
             configuration=configuration, location_id=location_id, subdomain=subdomain
         )
@@ -374,7 +370,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         date_of_birth: str,
         email: str,
         first_name: str,
-        gender: NexHealthGender | None = None,
+        gender: GenderType | None = None,
         height: int | None = None,
         home_phone_number: str | None = None,
         insurance_name: str | None = None,
@@ -600,8 +596,14 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
                 print(f"Error: {get_appointment_slots_response_data['error'][0]}")
             else:
                 print(f"Error: {get_appointment_slots_response_data}")
+
         print(f"get appointment slots data: {get_appointment_slots_response_data}")
-        return get_appointment_slots_response_data["data"]
+
+        get_appointment_slots_response_instance = GetAppointmentSlotsResponse(
+            count=get_appointment_slots_response_data["count"],
+            data=get_appointment_slots_response_data["data"],
+        )
+        return get_appointment_slots_response_instance
 
     @classmethod
     def get_appointments(
@@ -613,7 +615,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         created_by: str | None = None,
         end: str,
         foreign_id: str | None = None,
-        include: NexHealthIncludeAppointmentQuery | None = None,
+        include: NexHealthIncludeAppointmentQueryType | None = None,
         location_id: int | None = None,
         nex_only: bool | None = None,
         operatory_ids: Sequence[int] | None = None,
@@ -845,7 +847,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         cls,
         *,
         configuration: NexHealthConfig | None = None,
-        filter_by_subscription_feature: NexHealthSubscriptionFeature | None = None,
+        filter_by_subscription_feature: NexHealthSubscriptionFeatureType | None = None,
         foreign_id: str | None = None,
         inactive: bool | None = None,
         subdomain: str | None = None,
@@ -884,8 +886,14 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
                 print(f"Error: {get_locations_response_data['error'][0]}")
             else:
                 print(f"Error: {get_locations_response_data}")
+
         print(f"get locations response data: {get_locations_response_data}")
-        return get_locations_response_data["data"]
+
+        get_locations_response_instance = GetLocationsResponse(
+            count=get_locations_response_data["count"],
+            data=get_locations_response_data["data"],
+        )
+        return get_locations_response_instance
 
     @classmethod
     def get_operatories(
@@ -929,8 +937,14 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             else:
                 print(f"Error: {get_operatories_response_data}")
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error retrieving operatories")
+
         print(f"get operatories response data: {get_operatories_response_data}")
-        return get_operatories_response_data["data"]
+
+        get_operatories_response_instance = GetOperatoriesResponse(
+            count=get_operatories_response_data["count"],
+            data=get_operatories_response_data["data"],
+        )
+        return get_operatories_response_instance
 
     @classmethod
     def get_patients(
@@ -943,7 +957,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         email: str | None = None,
         foreign_id: str | None = None,
         inactive: bool = False,
-        include: NexHealthIncludePatientQuery | None = None,
+        include: NexHealthIncludePatientQueryType | None = None,
         location_id: int | None = None,
         location_strict: bool | None = None,  # defaults to `False` in `NexHealth`
         name: str | None = None,
@@ -1076,8 +1090,14 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
                 detail="Error retrieving providers",
                 status_code=HTTP_400_BAD_REQUEST,
             )
+
         print(f"get providers response data: {get_providers_response_data}")
-        return get_providers_response_data["data"]
+
+        get_providers_response_instance = GetProvidersResponse(
+            count=get_providers_response_data["count"],
+            data=get_providers_response_data["data"],
+        )
+        return get_providers_response_instance
 
     @classmethod
     def patch_appointment(

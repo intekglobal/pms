@@ -4,33 +4,9 @@ from typing import NotRequired
 from typing import Sequence
 from typing import TypedDict
 
-type NexHealthGender = Literal["Female", "Male", "Other"]
-type NexHealthIncludeAppointmentQueryValue = Literal[
-    "operatory",
-    "patient",
-    "procedures",
-]
-type NexHealthIncludeAppointmentQuery = Sequence[NexHealthIncludeAppointmentQueryValue]
-type NexHealthIncludePatientQueryValue = Literal[
-    "adjustments",
-    "procedures",
-    "upcoming_appts",
-]
-type NexHealthIncludePatientQuery = Sequence[NexHealthIncludePatientQueryValue]
-type NexHealthSubscriptionFeature = Literal[
-    "campaigns",
-    "enterprise",
-    "forms",
-    "insurance_verification",
-    "ledger_sync",
-    "messaging",
-    "online_booking",
-    "payments",
-    "recalls",
-    "reminders",
-    "reviews",
-    "waitlist",
-]
+# Local imports
+from type_definitions.miscellaneous_types import DayType
+from type_definitions.miscellaneous_types import GenderType
 
 
 class BaseBaseNexHealthPatient(TypedDict):
@@ -40,7 +16,7 @@ class BaseBaseNexHealthPatient(TypedDict):
 
 class BaseBio(TypedDict):
     date_of_birth: str
-    gender: NotRequired[NexHealthGender | None]
+    gender: NotRequired[GenderType | None]
 
 
 class BaseNexHealthAppointment(TypedDict):
@@ -110,8 +86,107 @@ class NexHealthAppointment(BaseNexHealthAppointment):
     timezone_offset: str
 
 
+class NexHealthAppointmentSlot(TypedDict):
+    end_time: str
+    operatory_id: int
+    provider_id: int
+    time: str
+
+
+class NexHealthAppointmentSlotResponse(TypedDict):
+    lid: int
+    next_available_date: str
+    operatory_id: int
+    pid: int
+    slots: Sequence[NexHealthAppointmentSlot]
+
+
+class NexHealthAppointmentType(TypedDict):
+    id: int
+    name: str
+    parent_type: Literal["Institution", "Location"]
+    parent_id: int
+    minutes: int
+    bookable_online: bool
+
+
+class NexHealthCustomRecurrence(TypedDict):
+    num: int
+    ref: str  # string date
+    # required field, but it can be an empty string as a way to "opt out"
+    unit: Literal["", "day", "month", "week"]
+
+
+class NexHealthAvailability(TypedDict):
+    active: bool
+    appointment_types: NotRequired[Sequence[NexHealthAppointmentType]]
+    begin_time: str  # HH:mm
+    custom_recurrence: NexHealthCustomRecurrence | None
+    days: Sequence[DayType]
+    end_time: str  # HH:mm
+    id: int
+    location_id: int
+    operatory_id: int
+    provider_id: int
+    specific_date: str | None
+    synced: bool
+    tz_offset: str
+
+
 class NexHealthGuardianPatient(BaseBaseNexHealthPatient):
     bio: BaseBio
+
+
+class NexHealthLocation(TypedDict):
+    appt_types_map_by_operatory: bool
+    city: str
+    country_code: str
+    created_at: str
+    email: str | None
+    foreign_id: str
+    foreign_id_type: str
+    id: int
+    inactive: bool
+    insert_appt_client: bool
+    institution_id: int
+    last_sync_time: str | None
+    latitude: float  # can be negative
+    longitude: float  # can be negative
+    map_by_operatory: bool
+    name: str
+    phone_number: str
+    set_availability_by_operatory: bool
+    state: str | None
+    street_address: str
+    street_address_2: str
+    tz: str
+    updated_at: str
+    weight: int | None
+    wlogo: str
+    zip_code: str
+
+
+class NexHealthLocationResponse(TypedDict):
+    id: int
+    locations: Sequence[NexHealthLocation]
+    name: str
+    subdomain: str
+
+
+class NexHealthOperatory(TypedDict):
+    active: bool
+    appt_categories: Sequence[Dict]
+    bookable_online: bool
+    created_at: str
+    display_name: str | None
+    foreign_id: str
+    foreign_id_type: str
+    id: int
+    last_sync_time: str | None
+    location_id: int
+    name: str
+    profile_url: str
+    updated_at: str
 
 
 class NexHealthPatient(BaseNexHealthPatient):
@@ -119,3 +194,32 @@ class NexHealthPatient(BaseNexHealthPatient):
     procedures: NotRequired[Sequence[Dict] | None]
     provider_id: int
     upcoming_appts: NotRequired[Sequence[BaseNexHealthAppointment] | None]
+
+
+class NexHealthProviderRequestable(TypedDict):
+    location_id: int
+
+
+class NexHealthProvider(TypedDict):
+    availabilities: NotRequired[Sequence[NexHealthAvailability] | None]
+    bio: Bio
+    created_at: str
+    display_name: str
+    email: str
+    first_name: str
+    foreign_id: str
+    foreign_id_type: str
+    id: int
+    inactive: bool
+    institution_id: int
+    last_name: str
+    last_sync_time: str
+    locations: NotRequired[Sequence[NexHealthLocation]]
+    middle_name: str
+    name: str
+    npi: str
+    provider_requestables: Sequence[NexHealthProviderRequestable]
+    specialty_code: str
+    state_license: str
+    tin: str
+    updated_at: str
