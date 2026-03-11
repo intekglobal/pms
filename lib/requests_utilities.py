@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from starlette.status import HTTP_401_UNAUTHORIZED
 from typing import Annotated
 
-# Local packages
+# Local imports
 from settings import settings
 
 

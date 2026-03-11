@@ -1,6 +1,6 @@
 from typing import Sequence
 
-# Local packages
+# Local imports
 from classes.nexhealth import NexHealthAppointment
 from classes.nexhealth import NexHealthPatient
 from classes.pms import Appointment

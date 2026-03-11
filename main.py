@@ -8,17 +8,27 @@ from typing import Annotated
 from typing import Literal
 from typing import Sequence
 
-# Local import
-from classes.nexhealth import NexHealthIncludeAppointmentQueryValue
-from classes.nexhealth import NexHealthIncludePatientQueryValue
-from classes.nexhealth import NexHealthGender
+# Local imports
+from classes.nexhealth import NexHealthAvailability
 from classes.nexhealth import NexHealthGuardianPatient
-from classes.nexhealth import NexHealthSubscriptionFeature
 from classes.nexhealth_sdk import NexHealthSDK
+from classes.pms import Appointment
+from classes.pms import Patient
+from classes.request import GetAppointmentSlotsResponse
+from classes.request import GetAppointmentsResponse
+from classes.request import GetLocationsResponse
+from classes.request import GetOperatoriesResponse
+from classes.request import GetPatientsResponse
+from classes.request import GetProvidersResponse
 from classes.request import NexHealthParams
 from classes.request import RequestConfiguration
 from ehr_abs_class import PER_PAGE
 from lib.requests_utilities import validate_app_key
+from type_definitions.miscellaneous_types import DayType
+from type_definitions.miscellaneous_types import GenderType
+from type_definitions.nexhealth_types import NexHealthIncludeAppointmentQueryValueType
+from type_definitions.nexhealth_types import NexHealthIncludePatientQueryValueType
+from type_definitions.nexhealth_types import NexHealthSubscriptionFeatureType
 
 app = FastAPI()
 bad_request_message = "Bad request; please check your call and then try again"
@@ -39,7 +49,7 @@ async def get_appointment_slots(
     slot_interval: int | None = None,
     slot_length: int | None = None,
     subdomain: str | None = None,
-):
+) -> GetAppointmentSlotsResponse:
     # TODO: Enable `Local` configuration
     if configuration:
         params = configuration.params
@@ -76,7 +86,7 @@ async def get_appointments(
     created_by: str | None = None,
     foreign_id: str | None = None,
     include: Annotated[
-        Sequence[NexHealthIncludeAppointmentQueryValue] | None,
+        Sequence[NexHealthIncludeAppointmentQueryValueType] | None,
         Query(),
     ] = None,
     location_id: int | None = None,
@@ -91,7 +101,7 @@ async def get_appointments(
     timezone: str | None = None,
     unavailable: bool | None = None,
     updated_since: str | None = None,
-):
+) -> GetAppointmentsResponse:
     if configuration:
         params = configuration.params
 
@@ -132,7 +142,7 @@ async def cancel_appointment(
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
     configuration: Annotated[RequestConfiguration | None, Body(embed=True)] = None,
     subdomain: str | None = None,
-):
+) -> Patient:
     if configuration:
         params = configuration.params
 
@@ -171,7 +181,7 @@ async def create_appointment(
     referrer: Annotated[str | None, Body()] = None,
     subdomain: str | None = None,
     unavailable: Annotated[bool | None, Body()] = None,
-):
+) -> Appointment:
     if configuration:
         params = configuration.params
 
@@ -216,17 +226,7 @@ async def create_appointment(
 @app.post("/create_availability")
 async def create_availability(
     begin_time: Annotated[str, Body()],
-    days: Sequence[
-        Literal[
-            "Sunday",
-            "Monday",
-            "Tuesday",
-            "Wednesday",
-            "Thursday",
-            "Friday",
-            "Saturday",
-        ]
-    ],
+    days: Sequence[DayType],
     end_time: Annotated[str, Body()],
     operatory_id: Annotated[int, Body()],
     provider_id: Annotated[int, Body()],
@@ -236,7 +236,7 @@ async def create_availability(
     location_id: int | None = None,
     specific_date: Annotated[str | None, Body()] = None,
     subdomain: str | None = None,
-):
+) -> NexHealthAvailability:
     if configuration:
         params = configuration.params
 
@@ -275,7 +275,7 @@ async def create_patient(
     configuration: RequestConfiguration | None = None,
     custom_contact_number: Annotated[str | None, Body()] = None,
     email: Annotated[str | None, Body()] = None,
-    gender: Annotated[NexHealthGender | None, Body()] = None,
+    gender: Annotated[GenderType | None, Body()] = None,
     height: Annotated[int | None, Body()] = None,
     home_phone_number: Annotated[str | None, Body()] = None,
     insurance_name: Annotated[str | None, Body()] = None,
@@ -289,7 +289,7 @@ async def create_patient(
     weight: Annotated[int | None, Body()] = None,
     work_phone_number: Annotated[str | None, Body()] = None,
     zip_code: Annotated[str | None, Body()] = None,
-):
+) -> Patient:
     # TODO: Enable `Local` configuration
     if configuration:
         params = configuration.params
@@ -350,11 +350,11 @@ async def get_locations(
     configuration: Annotated[
         RequestConfiguration[NexHealthParams] | None, Body(embed=True)
     ] = None,
-    filter_by_subscription_feature: NexHealthSubscriptionFeature | None = None,
+    filter_by_subscription_feature: NexHealthSubscriptionFeatureType | None = None,
     foreign_id: str | None = None,
     inactive: bool | None = None,
     subdomain: str | None = None,
-):
+) -> GetLocationsResponse:
     get_locations_response = NexHealthSDK.get_locations(
         configuration=configuration.params if configuration else None,
         filter_by_subscription_feature=filter_by_subscription_feature,
@@ -372,7 +372,7 @@ async def get_operatories(
     location_id: int | None = None,
     search_name: str | None = None,
     subdomain: str | None = None,
-):
+) -> GetOperatoriesResponse:
     if configuration:
         params = configuration.params
 
@@ -402,7 +402,7 @@ async def get_patients(
     foreign_id: str | None = None,
     inactive: bool = False,
     include: Annotated[
-        Sequence[NexHealthIncludePatientQueryValue] | None,
+        Sequence[NexHealthIncludePatientQueryValueType] | None,
         Query(),
     ] = None,
     location_id: int | None = None,
@@ -415,7 +415,7 @@ async def get_patients(
     raw_response: bool = False,
     subdomain: str | None = None,
     updated_since: str | None = None,
-):
+) -> GetPatientsResponse:
     if configuration:
         params = configuration.params
 
@@ -425,7 +425,7 @@ async def get_patients(
     else:
         params = None
 
-    patients = NexHealthSDK.get_patients(
+    get_patients_response = NexHealthSDK.get_patients(
         appointment_date_end=appointment_date_end,
         appointment_date_start=appointment_date_start,
         configuration=params,
@@ -445,7 +445,7 @@ async def get_patients(
         subdomain=subdomain,
         updated_since=updated_since,
     )
-    return patients
+    return get_patients_response
 
 
 @app.post("/providers")
@@ -454,7 +454,7 @@ async def get_providers(
     configuration: Annotated[RequestConfiguration | None, Body(embed=True)] = None,
     location_id: int | None = None,
     subdomain: str | None = None,
-):
+) -> GetProvidersResponse:
     if configuration:
         params = configuration.params
 
@@ -490,7 +490,7 @@ async def reschedule_appointment(
     referrer: Annotated[str | None, Body()] = None,
     subdomain: str | None = None,
     unavailable: Annotated[bool | None, Body()] = None,
-):
+) -> Appointment:
     if configuration:
         params = configuration.params
 
