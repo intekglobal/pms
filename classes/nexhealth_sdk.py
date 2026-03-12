@@ -14,6 +14,7 @@ from classes.nexhealth import NexHealthAppointment
 from classes.nexhealth import NexHealthAvailability
 from classes.nexhealth import NexHealthGuardianPatient
 from classes.nexhealth import NexHealthPatient
+from classes.pms import Appointment
 from classes.request import GetAppointmentSlotsResponse
 from classes.request import GetAppointmentsResponse
 from classes.request import GetLocationsResponse
@@ -1178,7 +1179,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         confirm: Literal[True] | None = None,
         id: int,
         subdomain: str | None = None,
-    ):
+    ) -> Appointment:
         if cancel is None and check_in_at is None and (confirm is None or not confirm):
             print("Error: no patch was action provided")
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error processing appointment")

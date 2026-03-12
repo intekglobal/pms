@@ -143,7 +143,7 @@ async def cancel_appointment(
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
     configuration: Annotated[RequestConfiguration | None, Body(embed=True)] = None,
     subdomain: str | None = None,
-) -> Patient:
+) -> Appointment:
     if configuration:
         params = configuration.params
 
