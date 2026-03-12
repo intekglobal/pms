@@ -67,6 +67,7 @@ class Appointment(BaseAppointment):
     """
 
     cancelled: bool
+    cancelled_at: str | None
     foreign_id: str | None
     note: str | None = None
     operatory: Dict | None = None
