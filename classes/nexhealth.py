@@ -14,11 +14,6 @@ class BaseBaseNexHealthPatient(TypedDict):
     last_name: str
 
 
-class BaseBio(TypedDict):
-    date_of_birth: str
-    gender: NotRequired[GenderType | None]
-
-
 class BaseNexHealthAppointment(TypedDict):
     confirmed: bool
     end_time: str
@@ -29,20 +24,25 @@ class BaseNexHealthAppointment(TypedDict):
     start_time: str
 
 
-class Bio(BaseBio):
+class BaseNexHealthBio(TypedDict):
+    date_of_birth: str
+    gender: NotRequired[GenderType | None]
+
+
+class NexHealthBio(BaseNexHealthBio):
+    address_line_1: NotRequired[str | None]
+    address_line_2: NotRequired[str | None]
+    cell_phone_number: NotRequired[str | None]
     city: NotRequired[str | None]
-    state: NotRequired[str | None]
-    zip_code: NotRequired[str | None]
+    home_phone_number: NotRequired[str | None]
     new_patient: bool
     non_patient: NotRequired[bool | None]
     phone_number: str
-    address_line_1: NotRequired[str | None]
-    address_line_2: NotRequired[str | None]
-    street_address: NotRequired[str | None]
-    cell_phone_number: NotRequired[str | None]
-    home_phone_number: NotRequired[str | None]
-    work_phone_number: NotRequired[str | None]
     previous_foreign_id: NotRequired[str | None]
+    state: NotRequired[str | None]
+    street_address: NotRequired[str | None]
+    work_phone_number: NotRequired[str | None]
+    zip_code: NotRequired[str | None]
 
 
 class BaseNexHealthPatient(BaseBaseNexHealthPatient):
@@ -55,7 +55,7 @@ class BaseNexHealthPatient(BaseBaseNexHealthPatient):
     institution_id: int
     foreign_id: str | None
     foreign_id_type: str | Literal["nex"]
-    bio: Bio
+    bio: NexHealthBio
     inactive: bool
     last_sync_time: str | None
     preferred_language: str | None
@@ -155,7 +155,7 @@ class NexHealthAvailability(TypedDict):
 
 
 class NexHealthGuardianPatient(BaseBaseNexHealthPatient):
-    bio: BaseBio
+    bio: BaseNexHealthBio
 
 
 class NexHealthLocation(TypedDict):
@@ -223,7 +223,7 @@ class NexHealthProviderRequestable(TypedDict):
 
 class NexHealthProvider(TypedDict):
     availabilities: NotRequired[Sequence[NexHealthAvailability] | None]
-    bio: Bio
+    bio: NexHealthBio
     created_at: str
     display_name: str
     email: str
