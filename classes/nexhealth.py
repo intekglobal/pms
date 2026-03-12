@@ -32,9 +32,9 @@ class BaseNexHealthAppointment(TypedDict):
 class Bio(BaseBio):
     city: NotRequired[str | None]
     state: NotRequired[str | None]
-    zip_code: NotRequired[int | None]
+    zip_code: NotRequired[str | None]
     new_patient: bool
-    non_patient: bool
+    non_patient: NotRequired[bool | None]
     phone_number: str
     address_line_1: NotRequired[str | None]
     address_line_2: NotRequired[str | None]
