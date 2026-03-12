@@ -6,6 +6,7 @@ from typing import Sequence
 
 # Local imports
 from classes.nexhealth import NexHealthProcedure
+from type_definitions.miscellaneous_types import GenderType
 
 
 class BaseAppointment(BaseModel):
@@ -33,13 +34,19 @@ class BasePatient(BaseModel):
     date_of_birth: str = Field(
         validation_alias=AliasPath("bio", "date_of_birth"),
     )
+    email: str | None
     first_name: str
+    gender: GenderType | None = Field(
+        default=None,
+        validation_alias=AliasPath("bio", "gender"),
+    )
     home_phone: str | None = Field(
         default=None,
         validation_alias=AliasPath("bio", "home_phone_number"),
     )
     id: int
     last_name: str
+    name: str
     new_patient: bool
     phone_number: str = Field(
         validation_alias=AliasPath("bio", "phone_number"),
@@ -60,13 +67,17 @@ class Appointment(BaseAppointment):
     """
 
     cancelled: bool
+    foreign_id: str | None
     note: str | None = None
     operatory: Dict | None = None
     operatory_id: int | None
     patient: BasePatient | None
     patient_id: int
+    patient_missed: bool
     procedures: Sequence[NexHealthProcedure] | None = None
     provider_id: int
+    timezone: str
+    timezone_offset: str
 
 
 class Patient(BasePatient):
