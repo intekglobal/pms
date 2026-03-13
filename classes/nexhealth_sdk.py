@@ -25,10 +25,11 @@ from classes.request import GetProvidersResponse
 from ehr_abs_class import NexHealthConfig
 from ehr_abs_class import PER_PAGE
 from ehr_abs_class import PMSAbstractBaseClass
-from lib.utilities import generate_pms_appointment
-from lib.utilities import generate_pms_appointments
-from lib.utilities import generate_pms_patient
-from lib.utilities import generate_pms_patients
+from lib.utilities.miscellaneous_utilities import generate_pms_appointment
+from lib.utilities.miscellaneous_utilities import generate_pms_appointments
+from lib.utilities.miscellaneous_utilities import generate_pms_patient
+from lib.utilities.miscellaneous_utilities import generate_pms_patients
+from lib.utilities.nexhealth_utilities import process_phone_number
 from settings import settings
 from type_definitions.miscellaneous_types import DayType
 from type_definitions.miscellaneous_types import GenderType
@@ -369,6 +370,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         cell_phone_number: str | None = None,
         city: str | None = None,
         configuration: NexHealthConfig | None = None,
+        country_code: str | None = None,
         custom_contact_number: str | None = None,
         date_of_birth: str,
         email: str,
@@ -398,12 +400,13 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             print("Error: `location_id` and/or `subdomain` missing")
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating patient")
 
+        processed_phone_number = process_phone_number(phone_number, country_code)
         # Validate first that the patient does not already exist
         get_patients_response = cls.get_patients(
             configuration=configuration,
             date_of_birth=date_of_birth,
             location_id=location_id,
-            phone_number=phone_number,
+            phone_number=processed_phone_number,
             subdomain=subdomain,
         )
 
@@ -415,7 +418,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         headers = cls.generate_headers(post_call=True)
         bio: Dict = {
             "date_of_birth": date_of_birth,
-            "phone_number": phone_number,
+            "phone_number": processed_phone_number,
         }
 
         if address_line_1:
@@ -423,17 +426,26 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         if address_line_2:
             bio.update({"address_line_2": address_line_2})
         if cell_phone_number:
-            bio.update({"cell_phone_number": cell_phone_number})
+            processed_cell_phone_number = process_phone_number(
+                cell_phone_number, country_code
+            )
+            bio.update({"cell_phone_number": processed_cell_phone_number})
         if city:
             bio.update({"city": city})
         if custom_contact_number:
-            bio.update({"custom_contact_number": custom_contact_number})
+            processed_custom_contact_number = process_phone_number(
+                custom_contact_number, country_code
+            )
+            bio.update({"custom_contact_number": processed_custom_contact_number})
         if gender:
             bio.update({"gender": gender})
         if height:
             bio.update({"height": height})
         if home_phone_number:
-            bio.update({"home_phone_number": home_phone_number})
+            processed_home_phone_number = process_phone_number(
+                home_phone_number, country_code
+            )
+            bio.update({"home_phone_number": processed_home_phone_number})
         if insurance_name:
             bio.update({"insurance_name": insurance_name})
         if race:
@@ -447,7 +459,10 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         if weight:
             bio.update({"weight": weight})
         if work_phone_number:
-            bio.update({"work_phone_number": work_phone_number})
+            processed_work_phone_number = process_phone_number(
+                work_phone_number, country_code
+            )
+            bio.update({"work_phone_number": processed_work_phone_number})
         if zip_code:
             bio.update({"zip_code": zip_code})
 

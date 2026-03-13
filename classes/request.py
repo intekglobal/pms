@@ -69,5 +69,6 @@ class NexHealthParams(BaseModel):
 
 
 class RequestConfiguration[T = LocalParams | NexHealthParams](BaseModel):
+    country_code: str
     type: Literal["Local", "NexHealth"]
     params: T
