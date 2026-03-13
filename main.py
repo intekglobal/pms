@@ -24,7 +24,7 @@ from classes.request import GetProvidersResponse
 from classes.request import NexHealthParams
 from classes.request import RequestConfiguration
 from ehr_abs_class import PER_PAGE
-from lib.requests_utilities import validate_app_key
+from lib.utilities.requests_utilities import validate_app_key
 from type_definitions.miscellaneous_types import DayType
 from type_definitions.miscellaneous_types import GenderType
 from type_definitions.nexhealth_types import NexHealthIncludeAppointmentQueryValueType
@@ -274,6 +274,7 @@ async def create_patient(
     cell_phone_number: Annotated[str | None, Body()] = None,
     city: Annotated[str | None, Body()] = None,
     configuration: RequestConfiguration | None = None,
+    country_code: str | None = None,
     custom_contact_number: Annotated[str | None, Body()] = None,
     email: Annotated[str | None, Body()] = None,
     gender: Annotated[GenderType | None, Body()] = None,
@@ -299,9 +300,13 @@ async def create_patient(
         if configuration.type == "Local" or not isinstance(params, NexHealthParams):
             raise HTTPException(HTTP_400_BAD_REQUEST, local_configuration_error_message)
 
+        c_country_code: str | None = (
+            country_code if country_code else configuration.country_code
+        )
         c_email = email if email else params.default_patient_email
         c_provider_id = provider_id if provider_id else params.default_provider_id
     else:
+        c_country_code = country_code
         c_email = email
         c_provider_id = provider_id
         params = None
@@ -321,6 +326,7 @@ async def create_patient(
         cell_phone_number=cell_phone_number,
         city=city,
         configuration=params,
+        country_code=c_country_code,
         custom_contact_number=custom_contact_number,
         date_of_birth=date_of_birth,
         email=c_email,
