@@ -1,0 +1,66 @@
+name: Deploy to QA Server
+
+on:
+  workflow_dispatch:
+    inputs:
+      docker_tag:
+        description: "Version to promote from Dev"
+        required: false
+        type: string
+
+jobs:
+  resolve_tag:
+    runs-on: ubuntu-latest
+    outputs:
+      docker_tag: ${{ steps.set_tag.outputs.docker_tag }}
+      should_build: ${{ steps.set_tag.outputs.should_build }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Resolve Docker tag
+        id: set_tag
+        run: |
+          if [ -z "${{ github.event.inputs.docker_tag }}" ]; then
+            VERSION=$(python - << 'EOF'
+            from pathlib import Path
+            import re
+
+            content = Path("setup.py").read_text()
+            m = re.search(r'version\s*=\s*"([^"]+)"', content)
+            if not m:
+                raise SystemExit("Version not found in setup.py")
+            print(m.group(1))
+            EOF
+            )
+
+            echo "docker_tag=$VERSION" >> $GITHUB_OUTPUT
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "No tag provided → using version: $VERSION"
+          else
+            echo "docker_tag=${{ github.event.inputs.docker_tag }}" >> $GITHUB_OUTPUT
+            echo "should_build=false" >> $GITHUB_OUTPUT
+            echo "Using provided tag: ${{ github.event.inputs.docker_tag }}"
+          fi
+
+  build:
+    needs: resolve_tag
+    if: needs.resolve_tag.outputs.should_build == 'true'
+    uses: ./.github/workflows/build-and-push.yml
+    with:
+      IMAGE_NAME: pms
+      DOCKER_TAG: ${{ needs.resolve_tag.outputs.docker_tag }}
+      GITHUB_USERNAME: ${{ vars.USERNAME }}
+    secrets:
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy:
+    uses: ./.github/workflows/deploy.yml
+    with:
+      GITHUB_USERNAME: ${{ vars.USERNAME }}
+      DOCKER_TAG: ${{ needs.resolve_tag.outputs.docker_tag }}
+    secrets:
+      SERVER_IP: ${{ secrets.QA_SERVER_IP }}
+      SERVER_USERNAME: ${{ secrets.QA_SERVER_USERNAME }}
+      SERVER_SSH_KEY: ${{ secrets.SSH_KEY }}
+      SERVER_PORT: ${{ secrets.QA_SERVER_PORT }}
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
