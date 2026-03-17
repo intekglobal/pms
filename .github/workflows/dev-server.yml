@@ -11,22 +11,12 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Extract version from setup.py
+      - name: Extract version from pyproject.toml
         id: version
         run: |
-          VERSION=$(python - << 'EOF'
-          from pathlib import Path
-          import re
-
-          content = Path("setup.py").read_text()
-          m = re.search(r'version\s*=\s*"([^"]+)"', content)
-          if not m:
-              raise SystemExit("Version not found in setup.py")
-          print(m.group(1))
-          EOF
-          )
+          VERSION=$(grep -E '^version *= *' pyproject.toml | sed -E 's/version *= *"([^"]+)"/\1/')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
   build:

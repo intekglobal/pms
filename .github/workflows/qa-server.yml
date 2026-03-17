@@ -21,17 +21,7 @@ jobs:
         id: set_tag
         run: |
           if [ -z "${{ github.event.inputs.docker_tag }}" ]; then
-            VERSION=$(python - << 'EOF'
-            from pathlib import Path
-            import re
-
-            content = Path("setup.py").read_text()
-            m = re.search(r'version\s*=\s*"([^"]+)"', content)
-            if not m:
-                raise SystemExit("Version not found in setup.py")
-            print(m.group(1))
-            EOF
-            )
+            VERSION=$(grep -E '^version *= *' pyproject.toml | sed -E 's/version *= *"([^"]+)"/\1/')
 
             echo "docker_tag=$VERSION" >> $GITHUB_OUTPUT
             echo "should_build=true" >> $GITHUB_OUTPUT
