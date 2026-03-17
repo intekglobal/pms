@@ -1,0 +1,14 @@
+services:
+  pms:
+    image: ${PMS_REGISTRY:? PMS_REGISTRY env variable missing}/pms:${PMS_TAG:? PMS_TAG env variable missing}
+    container_name: pms
+    env_file:
+      - .env.psm
+    restart: always
+    # ports:
+    #   - 127.0.0.1:${HOST_PORT:8000}:8000
+
+networks:
+  default:
+    name: llm-scheduler
+    external: true

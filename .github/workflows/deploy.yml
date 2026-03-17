@@ -1,0 +1,182 @@
+name: Deploy to Server
+
+on:
+  workflow_call:
+    inputs:
+      GITHUB_USERNAME:
+        required: true
+        type: string
+      DOCKER_TAG:
+        required: true
+        type: string
+      ENABLE_WIREGUARD:
+        required: false
+        type: boolean
+        default: false
+
+    secrets:
+      SERVER_IP:
+        required: true
+      SERVER_USERNAME:
+        required: true
+      SERVER_SSH_KEY:
+        required: true
+      SERVER_PORT:
+        required: true
+      GIT_TOKEN:
+        required: true
+      WIREGUARD_PRIVATE_KEY:
+        required: false
+      WIREGUARD_PEER_PUBLIC_KEY:
+        required: false
+      WIREGUARD_ENDPOINT:
+        required: false
+      WIREGUARD_ADDRESS:
+        required: false
+      WIREGUARD_DNS:
+        required: false
+      WIREGUARD_ALLOWED_IPS:
+        required: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up WireGuard
+        if: ${{ inputs.ENABLE_WIREGUARD }}
+        uses: egor-tensin/setup-wireguard@v1
+        with:
+          endpoint: "${{ secrets.WIREGUARD_ENDPOINT }}"
+          endpoint_public_key: "${{ secrets.WIREGUARD_PEER_PUBLIC_KEY }}"
+          ips: "${{ secrets.WIREGUARD_ADDRESS }}"
+          allowed_ips: "${{ secrets.WIREGUARD_ALLOWED_IPS }}"
+          private_key: "${{ secrets.WIREGUARD_PRIVATE_KEY }}"
+
+      - name: Force WireGuard MTU
+        if: ${{ inputs.ENABLE_WIREGUARD }}
+        run: |
+          set -e
+
+          WG_IF=$(wg show interfaces)
+
+          echo "Detected WireGuard interface(s): $WG_IF"
+
+          for IF in $WG_IF; do
+            echo "Setting MTU 1280 on $IF"
+            sudo ip link set mtu 1280 dev "$IF"
+            ip link show "$IF"
+          done
+
+      - name: Verify WireGuard connectivity
+        if: ${{ inputs.ENABLE_WIREGUARD }}
+        run: |
+          set -e
+
+          echo "=== WireGuard status ==="
+          sudo wg show 
+
+          echo "=== Interfaces ==="
+          ip addr
+
+          echo "=== Routes ==="
+          ip route
+
+          echo "=== Route to dev server ==="
+          ip route get ${{ secrets.SERVER_IP }}
+
+          echo "=== Pinging dev server (forces handshake) ==="
+          ping -c 3 ${{ secrets.SERVER_IP }}
+
+          echo "=== WireGuard status after traffic ==="
+          sudo wg show
+
+          echo "=== WireGuard connectivity verified ==="
+
+      - name: Prepare SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+
+          cat <<EOF > ~/.ssh/config
+          Host server
+            HostName ${{ secrets.SERVER_IP }}
+            User ${{ secrets.SERVER_USERNAME }}
+            Port ${{ secrets.SERVER_PORT }}
+            IdentityFile ~/.ssh/id_deploy
+            IdentitiesOnly yes
+            StrictHostKeyChecking no
+            UserKnownHostsFile=/dev/null
+            ServerAliveInterval 30
+            ServerAliveCountMax 10
+          EOF
+
+          chmod 600 ~/.ssh/config
+
+      - name: Copy docker-compose.yml (rsync)
+        id: rsync_copy
+        continue-on-error: true
+        run: |
+          rsync -av --progress \
+            ./docker-compose.yml \
+            server:/home/${{ secrets.SERVER_USERNAME }}/pms/
+
+      - name: Copy docker-compose.yml (scp fallback)
+        if: steps.rsync_copy.outcome == 'failure'
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "./docker-compose.yml"
+          target: "~/pms/"
+
+      - name: Execute deployment commands
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          GITHUB_USERNAME: ${{ inputs.GITHUB_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
+          PMS_APP_TAG: ${{ inputs.DOCKER_TAG }}
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          envs: GITHUB_USERNAME,GITHUB_TOKEN,PMS_APP_TAG
+          script: |
+            cd ~/pms/
+
+            checkError () {
+              status=$?
+              if [ $status -ne 0 ]; then
+                echo "Error: $@ failed"
+                exit $status
+              fi
+            }
+
+            echo "Logging into Docker registry..."
+            echo "$GITHUB_TOKEN" | docker login ghcr.io --username "$GITHUB_USERNAME" --password-stdin
+            checkError "Docker login"
+
+            LOWER_USERNAME=$(echo "$GITHUB_USERNAME" | tr '[:upper:]' '[:lower:]')
+            echo "Checking if image ghcr.io/$LOWER_USERNAME/ring-central-llm:$PMS_APP_TAG exists..."
+            if ! docker manifest inspect ghcr.io/$LOWER_USERNAME/ring-central-llm:$PMS_APP_TAG >/dev/null 2>&1; then
+              echo "Image with tag $PMS_APP_TAG does not exist. Using 'latest' instead."
+              PMS_APP_TAG="latest"
+            fi
+
+            export $(cat .env)
+            export PMS_APP_TAG="$PMS_APP_TAG"
+
+            echo "Pulling the latest Docker images..."
+            docker compose pull
+            checkError "Docker pull"
+
+            echo "Starting new deployment..."
+            docker compose up -d
+            checkError "Docker compose up"
+
+            echo "Deployment complete!"

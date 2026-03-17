@@ -1,0 +1,47 @@
+name: Build and Push Docker Image
+
+on:
+  workflow_call:
+    inputs:
+      GITHUB_USERNAME:
+        required: true
+        type: string
+      IMAGE_NAME:
+        required: true
+        type: string
+      DOCKER_TAG:
+        required: true
+        type: string
+    secrets:
+      GIT_TOKEN:
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check if Docker tag already exists
+        env:
+          GITHUB_USERNAME: ${{ inputs.GITHUB_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
+        run: |
+          echo "Logging into Docker registry..."
+          echo "$GITHUB_TOKEN" | docker login ghcr.io --username "$GITHUB_USERNAME" --password-stdin
+
+          IMAGE=ghcr.io/${{ inputs.GITHUB_USERNAME }}/${{ inputs.IMAGE_NAME }}:${{ inputs.DOCKER_TAG }}
+          if docker manifest inspect $IMAGE >/dev/null 2>&1; then
+            echo "Error: Docker image $IMAGE already exists"
+            exit 1
+          fi
+
+      - name: Publish Docker image
+        uses: elgohr/Publish-Docker-Github-Action@v5
+        with:
+          name: ${{ inputs.GITHUB_USERNAME }}/${{ inputs.IMAGE_NAME }}
+          registry: ghcr.io
+          username: ${{ inputs.GITHUB_USERNAME }}
+          password: ${{ secrets.GIT_TOKEN }}
+          dockerfile: ./Dockerfile
+          tags: ${{ inputs.DOCKER_TAG }},latest
