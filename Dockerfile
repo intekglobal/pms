@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ COPY . .
 
 RUN pip show fastapi uvicorn
 
-RUN echo "/app" > /usr/local/lib/python3.12/site-packages/workspace.pth
+RUN echo "/app" > /usr/local/lib/python3.13/site-packages/workspace.pth
 
 EXPOSE 8000
 
