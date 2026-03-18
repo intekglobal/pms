@@ -401,21 +401,6 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating patient")
 
         processed_phone_number = process_phone_number(phone_number, country_code)
-        # Validate first that the patient does not already exist
-        get_patients_response = cls.get_patients(
-            configuration=configuration,
-            date_of_birth=date_of_birth,
-            location_id=location_id,
-            phone_number=processed_phone_number,
-            subdomain=subdomain,
-        )
-
-        if get_patients_response.count:
-            print("Error creating patient, client already exists")
-            print(f"Patients data: {get_patients_response}")
-            raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating patient")
-
-        headers = cls.generate_headers(post_call=True)
         bio: Dict = {
             "date_of_birth": date_of_birth,
             "phone_number": processed_phone_number,
@@ -466,6 +451,21 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         if zip_code:
             bio.update({"zip_code": zip_code})
 
+        # Validate first that the patient does not already exist
+        get_patients_response = cls.get_patients(
+            configuration=configuration,
+            date_of_birth=date_of_birth,
+            location_id=location_id,
+            phone_number=processed_phone_number,
+            subdomain=subdomain,
+        )
+
+        if get_patients_response.count:
+            print("Error creating patient, client already exists")
+            print(f"Patients data: {get_patients_response}")
+            raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating patient")
+
+        headers = cls.generate_headers(post_call=True)
         data = {
             "patient": {
                 "email": email,
