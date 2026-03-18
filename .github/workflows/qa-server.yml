@@ -21,17 +21,7 @@ jobs:
         id: set_tag
         run: |
           if [ -z "${{ github.event.inputs.docker_tag }}" ]; then
-            VERSION=$(python - << 'EOF'
-            from pathlib import Path
-            import re
-
-            content = Path("setup.py").read_text()
-            m = re.search(r'version\s*=\s*"([^"]+)"', content)
-            if not m:
-                raise SystemExit("Version not found in setup.py")
-            print(m.group(1))
-            EOF
-            )
+            VERSION=$(grep -E '^version *= *' pyproject.toml | sed -E 's/version *= *"([^"]+)"/\1/')
 
             echo "docker_tag=$VERSION" >> $GITHUB_OUTPUT
             echo "should_build=true" >> $GITHUB_OUTPUT
@@ -54,6 +44,7 @@ jobs:
       GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy:
+    needs: resolve_tag
     uses: ./.github/workflows/deploy.yml
     with:
       GITHUB_USERNAME: ${{ vars.USERNAME }}
@@ -61,6 +52,6 @@ jobs:
     secrets:
       SERVER_IP: ${{ secrets.QA_SERVER_IP }}
       SERVER_USERNAME: ${{ secrets.QA_SERVER_USERNAME }}
-      SERVER_SSH_KEY: ${{ secrets.SSH_KEY }}
+      SERVER_SSH_KEY: ${{ secrets.QA_SSH_KEY }}
       SERVER_PORT: ${{ secrets.QA_SERVER_PORT }}
       GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
