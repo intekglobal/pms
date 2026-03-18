@@ -1,0 +1,49 @@
+name: Deploy to Dev Server
+
+on:
+  push:
+    branches:
+      - "dev-server"
+
+jobs:
+  extract_version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Extract version from pyproject.toml
+        id: version
+        run: |
+          VERSION=$(grep -E '^version *= *' pyproject.toml | sed -E 's/version *= *"([^"]+)"/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+  build:
+    needs: extract_version
+    uses: ./.github/workflows/build-and-push.yml
+    with:
+      IMAGE_NAME: recalls
+      DOCKER_TAG: ${{ needs.extract_version.outputs.version }}
+      GITHUB_USERNAME: ${{ vars.USERNAME }}
+    secrets:
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy:
+    needs: [build, extract_version]
+    uses: ./.github/workflows/deploy.yml
+    with:
+      GITHUB_USERNAME: ${{ vars.USERNAME }}
+      DOCKER_TAG: ${{ needs.extract_version.outputs.version }}
+      ENABLE_WIREGUARD: true
+    secrets:
+      SERVER_IP: ${{ secrets.DEV_SERVER_IP }}
+      SERVER_USERNAME: ${{ secrets.DEV_SERVER_USERNAME }}
+      SERVER_SSH_KEY: ${{ secrets.DEV_SSH_KEY }}
+      SERVER_PORT: ${{ secrets.DEV_SERVER_PORT }}
+      GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      WIREGUARD_PRIVATE_KEY: ${{ secrets.WIREGUARD_PRIVATE_KEY }}
+      WIREGUARD_PEER_PUBLIC_KEY: ${{ secrets.WIREGUARD_PEER_PUBLIC_KEY }}
+      WIREGUARD_ENDPOINT: ${{ secrets.WIREGUARD_ENDPOINT }}
+      WIREGUARD_ADDRESS: ${{ secrets.WIREGUARD_ADDRESS }}
+      WIREGUARD_ALLOWED_IPS: ${{ secrets.WIREGUARD_ALLOWED_IPS }}
