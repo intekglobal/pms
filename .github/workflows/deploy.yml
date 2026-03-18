@@ -42,7 +42,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up WireGuard
         if: ${{ inputs.ENABLE_WIREGUARD }}
@@ -162,8 +162,8 @@ jobs:
             checkError "Docker login"
 
             LOWER_USERNAME=$(echo "$GITHUB_USERNAME" | tr '[:upper:]' '[:lower:]')
-            echo "Checking if image ghcr.io/$LOWER_USERNAME/ring-central-llm:$PMS_APP_TAG exists..."
-            if ! docker manifest inspect ghcr.io/$LOWER_USERNAME/ring-central-llm:$PMS_APP_TAG >/dev/null 2>&1; then
+            echo "Checking if image ghcr.io/$LOWER_USERNAME/pms:$PMS_APP_TAG exists..."
+            if ! docker manifest inspect ghcr.io/$LOWER_USERNAME/pms:$PMS_APP_TAG >/dev/null 2>&1; then
               echo "Image with tag $PMS_APP_TAG does not exist. Using 'latest' instead."
               PMS_APP_TAG="latest"
             fi

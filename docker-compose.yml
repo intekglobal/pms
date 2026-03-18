@@ -1,6 +1,6 @@
 services:
   pms:
-    image: ${PMS_REGISTRY:? PMS_REGISTRY env variable missing}/pms:${PMS_TAG:? PMS_TAG env variable missing}
+    image: ${PMS_REGISTRY:? PMS_REGISTRY env variable missing}/pms:${PMS_APP_TAG:? PMS_APP_TAG env variable missing}
     container_name: pms
     env_file:
       - .env.psm
