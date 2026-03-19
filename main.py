@@ -9,6 +9,7 @@ from typing import Literal
 from typing import Sequence
 
 # Local imports
+from routers import recalls
 from classes.nexhealth import NexHealthAvailability
 from classes.nexhealth import NexHealthGuardianPatient
 from classes.nexhealth_sdk import NexHealthSDK
@@ -34,6 +35,8 @@ from type_definitions.nexhealth_types import NexHealthSubscriptionFeatureType
 app = FastAPI()
 bad_request_message = "Bad request; please check your call and then try again"
 local_configuration_error_message = "Configuration type currently not supported"
+
+app.include_router(recalls.router)
 
 
 @app.post("/appointment_slots")
