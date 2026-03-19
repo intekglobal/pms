@@ -979,6 +979,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         location_id: int | None = None,
         location_strict: bool | None = None,  # defaults to `False` in `NexHealth`
         name: str | None = None,
+        new_patient: bool | None = None,  # defaults to `False` in `NexHealth`
         non_patient: bool = False,
         page: int | None = None,
         per_page: int = PER_PAGE,
@@ -1022,6 +1023,8 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             url = f"{url}&location_strict={stringify_bool(location_strict)}"
         if name:
             url = f"{url}&name={name}"
+        if new_patient:
+            url = f"{url}&new_patient={stringify_bool(new_patient)}"
         if page:
             url = f"{url}&page={page}"
         if phone_number:
