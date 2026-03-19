@@ -1,3 +1,4 @@
+import datetime
 from fastapi import APIRouter
 from fastapi import Body
 from fastapi import Depends
@@ -30,14 +31,22 @@ async def obtain_patients(
     ],
     subdomain: str,
     end_recall_time: Annotated[
-        str | None, Body(description="Date value", examples=["1990-09-29"])
+        datetime.date | None,
+        Body(
+            description="Date value used to filter out procedures",
+            examples=[datetime.date(year=1990, month=8, day=29)],
+        ),
     ] = None,
     exclude_recent_contact_days: Annotated[int | None, Body()] = None,
     max_age: Annotated[int | None, Body()] = None,
     min_age: Annotated[int | None, Body()] = None,
     per_page: int = PER_PAGE,
     start_recall_time: Annotated[
-        str | None, Body(description="Date value", examples=["1990-09-29"])
+        datetime.date | None,
+        Body(
+            description="Date value used to filter out procedures",
+            examples=[datetime.date(year=1990, month=8, day=29)],
+        ),
     ] = None,
 ) -> Sequence[Patient]:
     get_patients_response = NexHealthSDK.get_patients(
@@ -57,21 +66,33 @@ async def obtain_patients(
                 # TODO: change to a `set` to make sure these values are unique
                 matching_procedures: list[NexHealthProcedure] = []
 
-                for procedure_code in procedure_codes:
-                    if "-" in procedure_code:
-                        # TODO: Add pattern validation
-                        start_range, end_range = procedure_code.split("-")
+                for procedure in procedures:
+                    code = procedure["code"]
+                    end_date = datetime.date.fromisoformat(procedure["start_date"])
+                    start_date = datetime.date.fromisoformat(procedure["end_date"])
 
-                        for procedure in procedures:
-                            code = procedure["code"]
+                    # Filter out procedures out of the date range, if any was provided
+                    if (
+                        # It is valid to provide no range at all
+                        (end_recall_time is None and start_recall_time is None)
+                        or (
+                            end_recall_time
+                            and start_recall_time
+                            and end_recall_time >= end_date
+                            and start_recall_time <= start_date
+                        )
+                        # It is also valid to provide only one end of the range
+                        or (end_recall_time and end_recall_time >= end_date)
+                        or (start_recall_time and start_recall_time <= start_date)
+                    ):
+                        for procedure_code in procedure_codes:
+                            if "-" in procedure_code:
+                                # TODO: Add pattern validation
+                                start_range, end_range = procedure_code.split("-")
 
-                            if code >= start_range and code <= end_range:
-                                matching_procedures.append(procedure)
-                    else:
-                        for procedure in procedures:
-                            code = procedure["code"]
-
-                            if procedure_code == code:
+                                if code >= start_range and code <= end_range:
+                                    matching_procedures.append(procedure)
+                            elif procedure_code == code:
                                 matching_procedures.append(procedure)
 
                 if matching_procedures:
