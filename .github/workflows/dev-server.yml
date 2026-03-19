@@ -23,7 +23,7 @@ jobs:
     needs: extract_version
     uses: ./.github/workflows/build-and-push.yml
     with:
-      IMAGE_NAME: recalls
+      IMAGE_NAME: pms
       DOCKER_TAG: ${{ needs.extract_version.outputs.version }}
       GITHUB_USERNAME: ${{ vars.USERNAME }}
     secrets:
