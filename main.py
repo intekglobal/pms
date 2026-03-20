@@ -1,3 +1,4 @@
+import datetime as dt
 from fastapi import Body
 from fastapi import Depends
 from fastapi import FastAPI
@@ -267,7 +268,9 @@ async def create_availability(
 
 @app.post("/create_patient")
 async def create_patient(
-    date_of_birth: Annotated[str, Body()],
+    date_of_birth: Annotated[
+        dt.date, Body(examples=[dt.date.fromisoformat("1990-09-29")])
+    ],
     first_name: Annotated[str, Body()],
     last_name: Annotated[str, Body()],
     phone_number: Annotated[str, Body()],
@@ -404,10 +407,10 @@ async def get_operatories(
 @app.post("/patients")
 async def get_patients(
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
-    appointment_date_end: str | None = None,
-    appointment_date_start: str | None = None,
+    appointment_date_end: dt.date | dt.datetime | None = None,
+    appointment_date_start: dt.date | dt.datetime | None = None,
     configuration: Annotated[RequestConfiguration | None, Body(embed=True)] = None,
-    date_of_birth: str | None = None,
+    date_of_birth: dt.date | None = None,
     email: str | None = None,
     foreign_id: str | None = None,
     inactive: bool = False,

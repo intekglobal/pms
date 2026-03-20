@@ -1,3 +1,4 @@
+import datetime as dt
 import httpx
 import requests
 from fastapi import HTTPException
@@ -372,7 +373,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         configuration: NexHealthConfig | None = None,
         country_code: str | None = None,
         custom_contact_number: str | None = None,
-        date_of_birth: str,
+        date_of_birth: dt.date,
         email: str,
         first_name: str,
         gender: GenderType | None = None,
@@ -968,10 +969,10 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
     def get_patients(
         cls,
         *,
-        appointment_date_end: str | None = None,
-        appointment_date_start: str | None = None,
+        appointment_date_end: dt.date | dt.datetime | None = None,
+        appointment_date_start: dt.date | dt.datetime | None = None,
         configuration: NexHealthConfig | None = None,
-        date_of_birth: str | None = None,
+        date_of_birth: dt.date | None = None,
         email: str | None = None,
         foreign_id: str | None = None,
         inactive: bool = False,

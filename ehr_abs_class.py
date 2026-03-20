@@ -1,3 +1,4 @@
+import datetime as dt
 from abc import ABCMeta
 from abc import abstractmethod
 
@@ -20,7 +21,7 @@ class PMSAbstractBaseClass[C = LocalConfig | NexHealthConfig](metaclass=ABCMeta)
         cls,
         *,
         configuration: C,
-        date_of_birth: str | None = None,
+        date_of_birth: dt.date | None = None,
         per_page: int = PER_PAGE,
         phone_number: str | None = None,
     ) -> GetPatientsResponse:
