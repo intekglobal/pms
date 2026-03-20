@@ -19,8 +19,8 @@ router = APIRouter(
 )
 
 
-@router.post("/patients")
-async def obtain_patients(
+@router.post("/patients-with-procedures")
+async def get_patients_with_procedures(
     location_id: int,
     procedure_codes: Annotated[
         Sequence[str],
