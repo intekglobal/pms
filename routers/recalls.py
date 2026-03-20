@@ -50,7 +50,7 @@ async def obtain_patients(
     ] = None,
 ) -> Sequence[Patient]:
     get_patients_response = NexHealthSDK.get_patients(
-        include=["procedures", "adjustments"],
+        include=["procedures", "upcoming_appts"],
         location_id=location_id,
         per_page=per_page,
         subdomain=subdomain,
