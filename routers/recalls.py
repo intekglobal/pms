@@ -63,12 +63,18 @@ async def get_patients_with_procedures(
         include=["procedures", "upcoming_appts"],
         location_id=location_id,
         per_page=per_page,
+        # Usually when the raw, `NexHealth` response is not desired, it is not necessary
+        # this value to `False` as that's its default value.
+        # Because this endpoint handler currently only supports PMS `Patient` instances,
+        # it is explicitly set to make sure it is not enabled unawares or by mistake.
+        raw_response=False,
         subdomain=subdomain,
     )
     get_patients_response_data = get_patients_response.data
     matching_patients: list[Patient] = []
 
     for patient in get_patients_response_data:
+        # currently there is only support fot PMS `Patient` patients
         if not isinstance(patient, Patient):
             continue
 
