@@ -11,6 +11,7 @@ from classes.nexhealth import NexHealthProcedure
 from classes.pms import Patient
 from dependencies import validate_app_key
 from ehr_abs_class import PER_PAGE
+from lib.utilities.miscellaneous_utilities import calculate_age
 
 router = APIRouter(
     dependencies=[Depends(validate_app_key)],
@@ -78,13 +79,26 @@ async def get_patients_with_procedures(
         if not isinstance(patient, Patient):
             continue
 
+        date_of_birth = patient.date_of_birth
         procedures = patient.procedures
 
+        # Skip patient with no date of birth
+        # NOTE: this is not expected in production though
+        if not date_of_birth:
+            # TODO: add logs about missing date of birth
+            continue
         # Patients with no `procedures`` are discarded (given that's the intention
         # of this endpoint), as well as those with previous appointments during the
         # specified time span (by `exclude_recent_contact_days`)
         if patient.appointments or not procedures:
             continue
+        if max_age or min_age:
+            # age validation
+            date_of_birth_date = dt.date.fromisoformat(date_of_birth)
+            age = calculate_age(date_of_birth_date)
+
+            if (max_age and max_age < age) or (min_age and min_age > age):
+                continue
 
         # TODO: change to a `set` to make sure these values are unique
         matching_procedures: list[NexHealthProcedure] = []

@@ -1,3 +1,4 @@
+import datetime as dt
 from typing import Sequence
 
 # Local imports
@@ -5,6 +6,16 @@ from classes.nexhealth import NexHealthAppointment
 from classes.nexhealth import NexHealthPatient
 from classes.pms import Appointment
 from classes.pms import Patient
+
+
+def calculate_age(date_of_birth: dt.date):
+    today = dt.date.today()
+    age = (
+        today.year
+        - date_of_birth.year
+        - ((today.month, today.day) < (date_of_birth.month, date_of_birth.day))
+    )
+    return age
 
 
 def generate_pms_appointment(
