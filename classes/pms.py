@@ -87,6 +87,7 @@ class Patient(BasePatient):
     """
 
     adjustments: Sequence[Dict] | None = None
+    appointments: Sequence[BaseAppointment] | None = None
     procedures: Sequence[NexHealthProcedure] | None = None
     provider_id: int
     upcoming_appointments: Sequence[BaseAppointment] | None = Field(
