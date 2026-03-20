@@ -94,29 +94,22 @@ async def get_patients_with_procedures(
             end_date = dt.date.fromisoformat(procedure["start_date"])
             start_date = dt.date.fromisoformat(procedure["end_date"])
 
-            # Filter out procedures out of the date range, if any was provided
-            if (
-                # It is valid to provide no range at all
-                (end_recall_time is None and start_recall_time is None)
-                or (
-                    end_recall_time
-                    and start_recall_time
-                    and end_recall_time >= end_date
-                    and start_recall_time <= start_date
-                )
-                # It is also valid to provide only one end of the range
-                or (end_recall_time and end_recall_time >= end_date)
-                or (start_recall_time and start_recall_time <= start_date)
+            # Filter out procedures not within date range, if any was provided (by
+            # `end_recall_time` and `start_recall_time`)
+            if (end_recall_time and end_recall_time < end_date) or (
+                start_recall_time and start_recall_time > start_date
             ):
-                for procedure_code in procedure_codes:
-                    # TODO: Add pattern validation for procedure codes
-                    if "-" in procedure_code:
-                        start_range, end_range = procedure_code.split("-")
+                continue
 
-                        if code >= start_range and code <= end_range:
-                            matching_procedures.append(procedure)
-                    elif procedure_code == code:
+            for procedure_code in procedure_codes:
+                # TODO: Add pattern validation for procedure codes
+                if "-" in procedure_code:
+                    start_range, end_range = procedure_code.split("-")
+
+                    if code >= start_range and code <= end_range:
                         matching_procedures.append(procedure)
+                elif procedure_code == code:
+                    matching_procedures.append(procedure)
 
                 if matching_procedures:
                     patient.procedures = matching_procedures
