@@ -212,6 +212,7 @@ class NexHealthOperatory(TypedDict):
 
 class NexHealthPatient(BaseNexHealthPatient):
     adjustments: NotRequired[Sequence[Dict] | None]
+    appointments: NotRequired[Sequence[BaseNexHealthAppointment] | None]
     procedures: NotRequired[Sequence[NexHealthProcedure] | None]
     provider_id: int
     upcoming_appts: NotRequired[Sequence[BaseNexHealthAppointment] | None]
