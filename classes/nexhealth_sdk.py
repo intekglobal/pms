@@ -1023,7 +1023,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             url = f"{url}&location_strict={stringify_bool(location_strict)}"
         if name:
             url = f"{url}&name={name}"
-        if new_patient:
+        if new_patient is not None:
             url = f"{url}&new_patient={stringify_bool(new_patient)}"
         if page:
             url = f"{url}&page={page}"
