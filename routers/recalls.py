@@ -1,4 +1,4 @@
-import datetime
+import datetime as dt
 from fastapi import APIRouter
 from fastapi import Body
 from fastapi import Depends
@@ -31,10 +31,10 @@ async def obtain_patients(
     ],
     subdomain: str,
     end_recall_time: Annotated[
-        datetime.date | None,
+        dt.date | None,
         Body(
             description="Date value used to filter out procedures",
-            examples=[datetime.date(year=1990, month=8, day=29)],
+            examples=[dt.date(year=1990, month=8, day=29)],
         ),
     ] = None,
     exclude_recent_contact_days: Annotated[int | None, Body()] = None,
@@ -42,14 +42,24 @@ async def obtain_patients(
     min_age: Annotated[int | None, Body()] = None,
     per_page: int = PER_PAGE,
     start_recall_time: Annotated[
-        datetime.date | None,
+        dt.date | None,
         Body(
             description="Date value used to filter out procedures",
-            examples=[datetime.date(year=1990, month=8, day=29)],
+            examples=[dt.date(year=1990, month=8, day=29)],
         ),
     ] = None,
 ) -> Sequence[Patient]:
+    if exclude_recent_contact_days is not None:
+        timedelta = dt.timedelta(days=exclude_recent_contact_days)
+        appointment_date_end = dt.date.today()
+        appointment_date_start = appointment_date_end - timedelta
+    else:
+        appointment_date_end = None
+        appointment_date_start = None
+
     get_patients_response = NexHealthSDK.get_patients(
+        appointment_date_end=appointment_date_end,
+        appointment_date_start=appointment_date_start,
         include=["procedures", "upcoming_appts"],
         location_id=location_id,
         per_page=per_page,
@@ -59,41 +69,48 @@ async def obtain_patients(
     matching_patients: list[Patient] = []
 
     for patient in get_patients_response_data:
-        if isinstance(patient, Patient):
-            procedures = patient.procedures
+        if not isinstance(patient, Patient):
+            continue
 
-            if procedures:
-                # TODO: change to a `set` to make sure these values are unique
-                matching_procedures: list[NexHealthProcedure] = []
+        procedures = patient.procedures
 
-                for procedure in procedures:
-                    code = procedure["code"]
-                    end_date = datetime.date.fromisoformat(procedure["start_date"])
-                    start_date = datetime.date.fromisoformat(procedure["end_date"])
+        # Patients with no `procedures`` are discarded (given that's the intention
+        # of this endpoint), as well as those with previous appointments during the
+        # specified time span (by `exclude_recent_contact_days`)
+        if patient.appointments or not procedures:
+            continue
 
-                    # Filter out procedures out of the date range, if any was provided
-                    if (
-                        # It is valid to provide no range at all
-                        (end_recall_time is None and start_recall_time is None)
-                        or (
-                            end_recall_time
-                            and start_recall_time
-                            and end_recall_time >= end_date
-                            and start_recall_time <= start_date
-                        )
-                        # It is also valid to provide only one end of the range
-                        or (end_recall_time and end_recall_time >= end_date)
-                        or (start_recall_time and start_recall_time <= start_date)
-                    ):
-                        for procedure_code in procedure_codes:
-                            if "-" in procedure_code:
-                                # TODO: Add pattern validation
-                                start_range, end_range = procedure_code.split("-")
+        # TODO: change to a `set` to make sure these values are unique
+        matching_procedures: list[NexHealthProcedure] = []
 
-                                if code >= start_range and code <= end_range:
-                                    matching_procedures.append(procedure)
-                            elif procedure_code == code:
-                                matching_procedures.append(procedure)
+        for procedure in procedures:
+            code = procedure["code"]
+            end_date = dt.date.fromisoformat(procedure["start_date"])
+            start_date = dt.date.fromisoformat(procedure["end_date"])
+
+            # Filter out procedures out of the date range, if any was provided
+            if (
+                # It is valid to provide no range at all
+                (end_recall_time is None and start_recall_time is None)
+                or (
+                    end_recall_time
+                    and start_recall_time
+                    and end_recall_time >= end_date
+                    and start_recall_time <= start_date
+                )
+                # It is also valid to provide only one end of the range
+                or (end_recall_time and end_recall_time >= end_date)
+                or (start_recall_time and start_recall_time <= start_date)
+            ):
+                for procedure_code in procedure_codes:
+                    # TODO: Add pattern validation for procedure codes
+                    if "-" in procedure_code:
+                        start_range, end_range = procedure_code.split("-")
+
+                        if code >= start_range and code <= end_range:
+                            matching_procedures.append(procedure)
+                    elif procedure_code == code:
+                        matching_procedures.append(procedure)
 
                 if matching_procedures:
                     patient.procedures = matching_procedures
