@@ -50,17 +50,9 @@ async def get_patients_with_procedures(
         ),
     ] = None,
 ) -> Sequence[Patient]:
-    if exclude_recent_contact_days is not None:
-        timedelta = dt.timedelta(days=exclude_recent_contact_days)
-        appointment_date_end = dt.date.today()
-        appointment_date_start = appointment_date_end - timedelta
-    else:
-        appointment_date_end = None
-        appointment_date_start = None
-
+    today = dt.date.today()
     get_patients_response = NexHealthSDK.get_patients(
-        appointment_date_end=appointment_date_end,
-        appointment_date_start=appointment_date_start,
+        appointment_date_end=today,
         include=["procedures", "upcoming_appts"],
         location_id=location_id,
         per_page=per_page,
@@ -79,6 +71,7 @@ async def get_patients_with_procedures(
         if not isinstance(patient, Patient):
             continue
 
+        appointments = patient.appointments
         date_of_birth = patient.date_of_birth
         procedures = patient.procedures
 
@@ -87,11 +80,40 @@ async def get_patients_with_procedures(
         if not date_of_birth:
             # TODO: add logs about missing date of birth
             continue
-        # Patients with no `procedures`` are discarded (given that's the intention
-        # of this endpoint), as well as those with previous appointments during the
-        # specified time span (by `exclude_recent_contact_days`)
-        if patient.appointments or not procedures:
+        # Patients with no `procedures` are discarded (given that's the intention
+        # of this endpoint)
+        if not procedures:
             continue
+        if exclude_recent_contact_days and appointments:
+            # # Appointment past-history threshold validation: check that patient
+            # # hasn't had appointments in the (forbidden?) threshold.
+            # The last appointment in `appointments` is the most recent appointment
+            # the patient has had.
+            last_appointment = appointments[-1]
+            # The time-delta value (in days) to rewind from tody, which defines the
+            # past-time threshold.
+            timedelta = dt.timedelta(days=exclude_recent_contact_days)
+            minimum_last_appointment_date = today - timedelta
+            # `BaseAppointment`'s `start_time` is a date-time string, therefore if
+            # has to be parsed using `datetime`
+            last_appointment_start_time_datetime = dt.datetime.fromisoformat(
+                last_appointment.start_time
+            )
+
+            if (
+                # `last_appointment_start_time_datetime` needs to be converted to
+                # `date` in order to perform this comparison given that `minimum_last_appointment_date`
+                # (as its name suggests) is a `date`, otherwise this comparison wouldn't
+                # be possible. Note that the other way around is not possible.
+                last_appointment_start_time_datetime.date()
+                >= minimum_last_appointment_date
+            ):
+                # If patient has had appointments within the set threshold (which
+                # is determined by its `start_time` value), it is ignored.
+                # Notice that because `appointments` are ascending sorted, it is
+                # enough to check most recent appoint to determine whether the patient
+                # has had appointments within the forbidden threshold.
+                continue
         if max_age or min_age:
             # age validation
             date_of_birth_date = dt.date.fromisoformat(date_of_birth)
