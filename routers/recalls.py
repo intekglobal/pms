@@ -39,6 +39,12 @@ async def get_patients_with_procedures(
         ),
     ] = None,
     exclude_recent_contact_days: Annotated[int | None, Body()] = None,
+    exclude_with_appointments_within_next_n_days: Annotated[
+        int | None,
+        Body(
+            description="Excludes patients that have appointments within the next N days."
+        ),
+    ] = None,
     max_age: Annotated[int | None, Body()] = None,
     min_age: Annotated[int | None, Body()] = None,
     per_page: int = PER_PAGE,
@@ -74,6 +80,7 @@ async def get_patients_with_procedures(
         appointments = patient.appointments
         date_of_birth = patient.date_of_birth
         procedures = patient.procedures
+        upcoming_appointments = patient.upcoming_appointments
 
         # Skip patient with no date of birth
         # NOTE: this is not expected in production though
@@ -113,6 +120,31 @@ async def get_patients_with_procedures(
                 # Notice that because `appointments` are ascending sorted, it is
                 # enough to check most recent appoint to determine whether the patient
                 # has had appointments within the forbidden threshold.
+                continue
+        if exclude_with_appointments_within_next_n_days and upcoming_appointments:
+            # # Upcoming appointments's threshold validation: exclude patients with
+            # # appointments inside the *forbidden* upcoming-appointments threshold.
+            # NOTE: more details can be found in **Appointment past-history threshold
+            # validation**.
+            # `upcoming_appointments` are ascending sorted, making its first value
+            # the actual first next appointment as well.
+            closest_upcoming_appointment = upcoming_appointments[0]
+            # The time-delta value (in days) to fast-word from today, used to define
+            # forbidden upcoming-appointments threshold.
+            fastforward_timedelta = dt.timedelta(
+                days=exclude_with_appointments_within_next_n_days
+            )
+            next_appointments_boundary_date = today + fastforward_timedelta
+            closest_upcoming_appointment_start_time_datetime = (
+                dt.datetime.fromisoformat(closest_upcoming_appointment.start_time)
+            )
+
+            if (
+                closest_upcoming_appointment_start_time_datetime.date()
+                <= next_appointments_boundary_date
+            ):
+                # Exclude patients with upcoming appointments within the forbidden
+                # threshold.
                 continue
         if max_age or min_age:
             # age validation
