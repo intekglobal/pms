@@ -147,7 +147,7 @@ async def get_patients_with_procedures(
                 elif procedure_code == code:
                     matching_procedures.append(procedure)
 
-                if matching_procedures:
-                    patient.procedures = matching_procedures
-                    matching_patients.append(patient)
+        if matching_procedures:
+            patient.procedures = matching_procedures
+            matching_patients.append(patient)
     return matching_patients
