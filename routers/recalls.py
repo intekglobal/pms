@@ -38,7 +38,12 @@ async def get_patients_with_procedures(
             examples=[dt.date(year=1990, month=8, day=29)],
         ),
     ] = None,
-    exclude_recent_contact_days: Annotated[int | None, Body()] = None,
+    exclude_with_appointments_within_last_n_days: Annotated[
+        int | None,
+        Body(
+            description="Exclude patients that have appointments within the last N days."
+        ),
+    ] = None,
     exclude_with_appointments_within_next_n_days: Annotated[
         int | None,
         Body(
@@ -91,7 +96,7 @@ async def get_patients_with_procedures(
         # of this endpoint)
         if not procedures:
             continue
-        if exclude_recent_contact_days and appointments:
+        if exclude_with_appointments_within_last_n_days and appointments:
             # # Appointment past-history threshold validation: check that patient
             # # hasn't had appointments in the (forbidden?) threshold.
             # The last appointment in `appointments` is the most recent appointment
@@ -99,8 +104,10 @@ async def get_patients_with_procedures(
             last_appointment = appointments[-1]
             # The time-delta value (in days) to rewind from tody, which defines the
             # past-time threshold.
-            timedelta = dt.timedelta(days=exclude_recent_contact_days)
-            minimum_last_appointment_date = today - timedelta
+            rewind_timedelta = dt.timedelta(
+                days=exclude_with_appointments_within_last_n_days
+            )
+            last_appointments_boundary_date = today - rewind_timedelta
             # `BaseAppointment`'s `start_time` is a date-time string, therefore if
             # has to be parsed using `datetime`
             last_appointment_start_time_datetime = dt.datetime.fromisoformat(
@@ -109,11 +116,11 @@ async def get_patients_with_procedures(
 
             if (
                 # `last_appointment_start_time_datetime` needs to be converted to
-                # `date` in order to perform this comparison given that `minimum_last_appointment_date`
+                # `date` in order to perform this comparison given that `last_appointments_boundary_date`
                 # (as its name suggests) is a `date`, otherwise this comparison wouldn't
                 # be possible. Note that the other way around is not possible.
                 last_appointment_start_time_datetime.date()
-                >= minimum_last_appointment_date
+                >= last_appointments_boundary_date
             ):
                 # If patient has had appointments within the set threshold (which
                 # is determined by its `start_time` value), it is ignored.
