@@ -48,21 +48,24 @@ class NexHealthBio(BaseNexHealthBio, NexHealthProviderBio):
     zip_code: NotRequired[str | None]
 
 
-class BaseNexHealthPatient(BaseBaseNexHealthPatient):
-    id: int
-    email: str | None
-    middle_name: str | None
-    name: str
+class NexHealthPatientAndProviderCommonProps(BaseBaseNexHealthPatient):
     created_at: str
-    updated_at: str
-    institution_id: int
+    email: str | None
     foreign_id: str | None
     foreign_id_type: str | Literal["nex"]
-    bio: NexHealthBio
+    id: int
     inactive: bool
+    institution_id: int
     last_sync_time: str | None
-    preferred_language: str | None
+    middle_name: str | None
+    name: str
+    updated_at: str
+
+
+class BaseNexHealthPatient(NexHealthPatientAndProviderCommonProps):
+    bio: NexHealthBio
     location_ids: Sequence[int]
+    preferred_language: str | None
 
 
 class NexHealthFee(TypedDict):
@@ -225,26 +228,13 @@ class NexHealthProviderRequestable(TypedDict):
     location_id: int
 
 
-class NexHealthProvider(TypedDict):
+class NexHealthProvider(NexHealthPatientAndProviderCommonProps):
     availabilities: NotRequired[Sequence[NexHealthAvailability] | None]
     bio: NexHealthProviderBio
-    created_at: str
     display_name: str | None
-    email: str | None
-    first_name: str
-    foreign_id: str | None
-    foreign_id_type: str | Literal["nex"]
-    id: int
-    inactive: bool
-    institution_id: int
-    last_name: str
-    last_sync_time: str | None
     locations: NotRequired[Sequence[NexHealthLocation] | None]
-    middle_name: str | None
-    name: str
     npi: str | None
     provider_requestables: Sequence[NexHealthProviderRequestable]
     specialty_code: str
     state_license: str | None
     tin: str | None
-    updated_at: str
