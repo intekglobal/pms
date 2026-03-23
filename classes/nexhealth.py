@@ -29,15 +29,18 @@ class BaseNexHealthBio(TypedDict):
     gender: NotRequired[GenderType | None]
 
 
-class NexHealthBio(BaseNexHealthBio):
+class NexHealthProviderBio(TypedDict):
+    cell_phone_number: NotRequired[str | None]
+    home_phone_number: NotRequired[str | None]
+    phone_number: str
+
+
+class NexHealthBio(BaseNexHealthBio, NexHealthProviderBio):
     address_line_1: NotRequired[str | None]
     address_line_2: NotRequired[str | None]
-    cell_phone_number: NotRequired[str | None]
     city: NotRequired[str | None]
-    home_phone_number: NotRequired[str | None]
     new_patient: bool
     non_patient: NotRequired[bool | None]
-    phone_number: str
     previous_foreign_id: NotRequired[str | None]
     state: NotRequired[str | None]
     street_address: NotRequired[str | None]
@@ -224,24 +227,24 @@ class NexHealthProviderRequestable(TypedDict):
 
 class NexHealthProvider(TypedDict):
     availabilities: NotRequired[Sequence[NexHealthAvailability] | None]
-    bio: NexHealthBio
+    bio: NexHealthProviderBio
     created_at: str
-    display_name: str
-    email: str
+    display_name: str | None
+    email: str | None
     first_name: str
-    foreign_id: str
-    foreign_id_type: str
+    foreign_id: str | None
+    foreign_id_type: str | Literal["nex"]
     id: int
     inactive: bool
     institution_id: int
     last_name: str
-    last_sync_time: str
-    locations: NotRequired[Sequence[NexHealthLocation]]
-    middle_name: str
+    last_sync_time: str | None
+    locations: NotRequired[Sequence[NexHealthLocation] | None]
+    middle_name: str | None
     name: str
-    npi: str
+    npi: str | None
     provider_requestables: Sequence[NexHealthProviderRequestable]
     specialty_code: str
-    state_license: str
-    tin: str
+    state_license: str | None
+    tin: str | None
     updated_at: str
