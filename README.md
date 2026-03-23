@@ -45,3 +45,45 @@ If, for whatever reason, this is not useful for you, you can specify which port 
 ```bash
 python3 -m fastapi dev main.py --port 9000
 ```
+
+## Deployment
+
+This project uses **GitHub Actions** to manage deployments across two environments:
+
+- **DEV Server**
+- **QA Server**
+
+Each environment follows a different deployment strategy.
+
+### DEV Deployment
+
+**Trigger**: Push to `dev` branch.
+
+#### Required
+
+Before pushing, **bump the version**:
+
+- `package.json` (Node.js)
+- `pyproject.toml` (Python)
+
+#### Important
+
+- Docker images use the version as the tag.
+- If the tag already exists, the **workflow will fail**.
+
+### QA Deployment
+
+**Trigger**: Manual (GitHub actions).
+**Input**: `version` (optional)
+
+#### QA Scenarios
+
+##### With version (recommended)
+
+- Promotes an existing image from DEV
+- No image rebuild
+
+##### Without version
+
+- Builds a new image
+- **You must bump the version**, or it will fail
