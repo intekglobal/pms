@@ -13,6 +13,7 @@ from typing import Sequence
 from routers import recalls
 from classes.nexhealth import NexHealthAvailability
 from classes.nexhealth import NexHealthGuardianPatient
+from classes.nexhealth import NexHealthProvider
 from classes.nexhealth_sdk import NexHealthSDK
 from classes.pms import Appointment
 from classes.pms import Patient
@@ -31,6 +32,7 @@ from type_definitions.miscellaneous_types import DayType
 from type_definitions.miscellaneous_types import GenderType
 from type_definitions.nexhealth_types import NexHealthIncludeAppointmentQueryValueType
 from type_definitions.nexhealth_types import NexHealthIncludePatientQueryValueType
+from type_definitions.nexhealth_types import NexHealthProviderIncludeQueryType
 from type_definitions.nexhealth_types import NexHealthSubscriptionFeatureType
 
 app = FastAPI()
@@ -494,6 +496,22 @@ async def get_procedures(
         updated_after=updated_after,
     )
     return procedures
+
+
+@app.get("/provider/{id}")
+async def get_provider(
+    id: int,
+    subdomain: str,
+    x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
+    include: Annotated[
+        Sequence[NexHealthProviderIncludeQueryType] | None,
+        Query(),
+    ] = None,
+) -> NexHealthProvider:
+    get_provider_response = NexHealthSDK.get_provider(
+        id=id, include=include, subdomain=subdomain
+    )
+    return get_provider_response
 
 
 @app.post("/providers")

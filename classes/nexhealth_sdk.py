@@ -15,6 +15,7 @@ from classes.nexhealth import NexHealthAppointment
 from classes.nexhealth import NexHealthAvailability
 from classes.nexhealth import NexHealthGuardianPatient
 from classes.nexhealth import NexHealthPatient
+from classes.nexhealth import NexHealthProvider
 from classes.pms import Appointment
 from classes.request import GetAppointmentSlotsResponse
 from classes.request import GetAppointmentsResponse
@@ -37,6 +38,7 @@ from type_definitions.miscellaneous_types import GenderType
 from type_definitions.nexhealth_types import NexHealthIncludeAppointmentQueryType
 from type_definitions.nexhealth_types import NexHealthIncludePatientQueryType
 from type_definitions.nexhealth_types import NexHealthParentType
+from type_definitions.nexhealth_types import NexHealthProviderIncludeQueryValueType
 from type_definitions.nexhealth_types import NexHealthSubscriptionFeatureType
 
 
@@ -1132,6 +1134,48 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             data=nex_health_get_procedures_response_data["data"],
         )
         return nex_health_get_procedures_response
+
+    @classmethod
+    def get_provider(
+        cls,
+        *,
+        id: int,
+        include: NexHealthProviderIncludeQueryValueType | None = None,
+        subdomain: str,
+    ) -> NexHealthProvider:
+        headers = cls.generate_headers()
+        generated_url = cls.__generate_url(
+            path=f"/providers/{id}",
+            subdomain=subdomain,
+        )
+        url = generated_url
+
+        if include:
+            for value in include:
+                url = f"{url}&include[]={value}"
+
+        get_provider_response = requests.get(url, headers=headers)
+        get_provider_response_data = get_provider_response.json()
+        get_provider_response_status_code = get_provider_response.status_code
+
+        if get_provider_response_status_code != 200:
+            print("Error retrieving provider")
+            print(f"Response status code: {get_provider_response_status_code}")
+
+            if get_provider_response_status_code in [400, 401, 403, 404, 500]:
+                if get_provider_response_status_code == 403:
+                    # Because so far `403` errors encountered are related to an incorrect
+                    # `subdomain` value, it is printed to help with troubleshooting
+                    print(f"Subdomain: {subdomain}")
+
+                print(f"Response data: {get_provider_response_data}")
+                print(f"Error: {get_provider_response_data['error'][0]}")
+            else:
+                print(f"Error: {get_provider_response_data}")
+            raise HTTPException(HTTP_400_BAD_REQUEST, "Error retrieving provider")
+
+        print(f"get provider response data: {get_provider_response_data}")
+        return get_provider_response_data["data"]
 
     @classmethod
     def get_providers(
