@@ -232,7 +232,7 @@ async def get_patients_with_procedures(
                         # retrieved patients; this is done to avoid making additional
                         # calls to `NexHealth`, and leaving that as the last resource.
                         for _patient in get_patients_response_data:
-                            if isinstance(patient, Patient):
+                                if isinstance(_patient, Patient):
                                 continue
 
                             _appointments = _patient["appointments"]
@@ -282,10 +282,12 @@ async def get_patients_with_procedures(
                         provider_names_map.update({provider_id: provider_name})
 
             matching_patients.append(
-                RecallsPatient(
+                RecallsPatient.model_validate(
+                    {
                     **patient,
-                    provider_name=provider_name,
-                    new_patient=compute_new_patient_value(patient),
+                        "provider_name": provider_name,
+                        "new_patient": compute_new_patient_value(patient),
+                    }
                 )
             )
     return matching_patients
