@@ -94,3 +94,12 @@ class Patient(BasePatient):
         default=None,
         validation_alias=AliasPath("upcoming_appts"),
     )
+
+
+class RecallsPatient(Patient):
+    """
+    A patient class used specifically for *Recalls*, it is exactly like `Patient`
+    except for it provides an additional field `provider_name`.
+    """
+
+    provider_name: str

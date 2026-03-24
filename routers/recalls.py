@@ -3,15 +3,18 @@ from fastapi import APIRouter
 from fastapi import Body
 from fastapi import Depends
 from typing import Annotated
+from typing import Dict
 from typing import Sequence
 
 # Local imports
 from classes.nexhealth_sdk import NexHealthSDK
 from classes.nexhealth import NexHealthProcedure
 from classes.pms import Patient
+from classes.pms import RecallsPatient
 from dependencies import validate_app_key
 from ehr_abs_class import PER_PAGE
 from lib.utilities.miscellaneous_utilities import calculate_age
+from lib.utilities.pms_utilities import compute_new_patient_value
 
 router = APIRouter(
     dependencies=[Depends(validate_app_key)],
@@ -60,32 +63,33 @@ async def get_patients_with_procedures(
             examples=[dt.date(year=1990, month=8, day=29)],
         ),
     ] = None,
-) -> Sequence[Patient]:
+) -> Sequence[RecallsPatient]:
     today = dt.date.today()
     get_patients_response = NexHealthSDK.get_patients(
         appointment_date_end=today,
         include=["procedures", "upcoming_appts"],
         location_id=location_id,
         per_page=per_page,
-        # Usually when the raw, `NexHealth` response is not desired, it is not necessary
-        # this value to `False` as that's its default value.
-        # Because this endpoint handler currently only supports PMS `Patient` instances,
-        # it is explicitly set to make sure it is not enabled unawares or by mistake.
-        raw_response=False,
+        raw_response=True,
         subdomain=subdomain,
     )
     get_patients_response_data = get_patients_response.data
-    matching_patients: list[Patient] = []
+    matching_patients: list[RecallsPatient] = []
+    provider_names_map: Dict[int, str] = {}
 
     for patient in get_patients_response_data:
-        # currently there is only support fot PMS `Patient` patients
-        if not isinstance(patient, Patient):
+        # `patient` is of type `NexHealthPatient` because the usage of `raw_response=True`
+        # in `NexHealthSDK`'s `get_patients`.
+        # This validation is necessary to properly narrow down `patient`'s type and
+        # use it without hassle from here on.
+        if isinstance(patient, Patient):
             continue
 
-        appointments = patient.appointments
-        date_of_birth = patient.date_of_birth
-        procedures = patient.procedures
-        upcoming_appointments = patient.upcoming_appointments
+        appointments = patient["appointments"]
+        bio = patient["bio"]
+        date_of_birth = bio["date_of_birth"]
+        procedures = patient["procedures"]
+        upcoming_appointments = patient["upcoming_appts"]
 
         # Skip patient with no date of birth
         # NOTE: this is not expected in production though
@@ -111,7 +115,7 @@ async def get_patients_with_procedures(
             # `BaseAppointment`'s `start_time` is a date-time string, therefore if
             # has to be parsed using `datetime`
             last_appointment_start_time_datetime = dt.datetime.fromisoformat(
-                last_appointment.start_time
+                last_appointment["start_time"]
             )
 
             if (
@@ -143,7 +147,7 @@ async def get_patients_with_procedures(
             )
             next_appointments_boundary_date = today + fastforward_timedelta
             closest_upcoming_appointment_start_time_datetime = (
-                dt.datetime.fromisoformat(closest_upcoming_appointment.start_time)
+                dt.datetime.fromisoformat(closest_upcoming_appointment["start_time"])
             )
 
             if (
@@ -179,6 +183,7 @@ async def get_patients_with_procedures(
             for procedure_code in procedure_codes:
                 # TODO: Add pattern validation for procedure codes
                 if "-" in procedure_code:
+                    # procedure-code-range validation
                     start_range, end_range = procedure_code.split("-")
 
                     if code >= start_range and code <= end_range:
@@ -187,6 +192,100 @@ async def get_patients_with_procedures(
                     matching_procedures.append(procedure)
 
         if matching_procedures:
-            patient.procedures = matching_procedures
-            matching_patients.append(patient)
+            patient["procedures"] = matching_procedures
+
+            # # Provider name functionality
+            if upcoming_appointments:
+                # If there are upcoming appointments, use the name of the provider
+                # of the next upcoming appointment
+                next_upcoming_appointment = upcoming_appointments[0]
+                provider_name = next_upcoming_appointment["provider_name"]
+
+                provider_names_map.update(
+                    {
+                        next_upcoming_appointment["provider_id"]: provider_name,
+                    }
+                )
+            else:
+                provider_id = patient["provider_id"]
+                provider_name = provider_names_map.get(provider_id, "")
+
+                if not provider_name:
+                    # # Logic to obtain the provider name when it has not yet being
+                    # # memoized.
+                    provider_name_found = False
+
+                    if appointments:
+                        # Try to obtain the provider name from the patient's appointments
+                        # history.
+                        for appointment in appointments:
+                            if provider_id == appointment["provider_id"]:
+                                provider_name = appointment["provider_name"]
+                                provider_name_found = True
+
+                                # memoized/map the provider name associated to `provider_id`.
+                                provider_names_map.update({provider_id: provider_name})
+                                break
+                    if not provider_name_found:
+                        # If the provider name has not been found yet, try to find
+                        # it from the appointments/upcoming appointments of the already
+                        # retrieved patients; this is done to avoid making additional
+                        # calls to `NexHealth`, and leaving that as the last resource.
+                        for _patient in get_patients_response_data:
+                            if isinstance(patient, Patient):
+                                continue
+
+                            _appointments = _patient["appointments"]
+                            _upcoming_appointments = _patient["upcoming_appts"]
+
+                            if _upcoming_appointments:
+                                # Start searching in upcoming appointments
+                                for _upcoming_appointment in _upcoming_appointments:
+                                    if (
+                                        provider_id
+                                        == _upcoming_appointment["provider_id"]
+                                    ):
+                                        provider_name = _upcoming_appointment[
+                                            "provider_name"
+                                        ]
+                                        provider_name_found = True
+
+                                        provider_names_map.update(
+                                            {provider_id: provider_name}
+                                        )
+                                        break
+                            if not provider_name_found and _appointments:
+                                # And continue with appointments history should the
+                                # provider name hasn't been found yet.
+                                for _appointment in _appointments:
+                                    if provider_id == _appointment["provider_id"]:
+                                        provider_name = _appointment["provider_name"]
+                                        provider_name_found = True
+
+                                        provider_names_map.update(
+                                            {provider_id: provider_name}
+                                        )
+                                        break
+                            if provider_name_found:
+                                # Exit `get_patients_response_data` loop as soon
+                                # as the provider name has been found.
+                                break
+                    if not provider_name_found:
+                        # Lastly, if the provided name couldn't be found from the
+                        # current patients data, then proceed to obtain it directly
+                        # from `NexHealth`.
+                        get_provider_response = NexHealthSDK.get_provider(
+                            id=provider_id, subdomain=subdomain
+                        )
+                        provider_name = get_provider_response["name"]
+
+                        provider_names_map.update({provider_id: provider_name})
+
+            matching_patients.append(
+                RecallsPatient(
+                    **patient,
+                    provider_name=provider_name,
+                    new_patient=compute_new_patient_value(patient),
+                )
+            )
     return matching_patients

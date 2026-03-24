@@ -6,6 +6,7 @@ from classes.nexhealth import NexHealthAppointment
 from classes.nexhealth import NexHealthPatient
 from classes.pms import Appointment
 from classes.pms import Patient
+from .pms_utilities import compute_new_patient_value
 
 
 def calculate_age(date_of_birth: dt.date):
@@ -51,7 +52,7 @@ def generate_pms_patient(nexhealth_patient: NexHealthPatient) -> Patient:
     patient = Patient.model_validate(
         {
             **nexhealth_patient,
-            "new_patient": nexhealth_patient["foreign_id"] is None,
+            "new_patient": compute_new_patient_value(nexhealth_patient),
         }
     )
     return patient
