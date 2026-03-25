@@ -220,7 +220,8 @@ class NexHealthPatient(BaseNexHealthPatient):
     adjustments: NotRequired[Sequence[Dict] | None]
     appointments: NotRequired[Sequence[BaseNexHealthAppointment] | None]
     procedures: NotRequired[Sequence[NexHealthProcedure] | None]
-    provider_id: int
+    # When a patient record has no provider ID, it's highly likely that it is corrupted.
+    provider_id: int | None
     upcoming_appts: NotRequired[Sequence[BaseNexHealthAppointment] | None]
 
 
