@@ -12,7 +12,8 @@ from typing import Sequence
 from classes.nexhealth_sdk import NexHealthSDK
 from classes.nexhealth import NexHealthProcedure
 from classes.pms import Patient
-from classes.pms import RecallsPatient
+from classes.recalls_classes import RecallsPatient
+from classes.recalls_classes import RecallsPatientProviderInfo
 from dependencies import validate_app_key
 from ehr_abs_class import PER_PAGE
 from lib.utilities.miscellaneous_utilities import calculate_age
@@ -222,7 +223,13 @@ async def get_patients_with_procedures(
                     # of the next upcoming appointment
                     next_upcoming_appointment = upcoming_appointments[0]
                     provider_name = next_upcoming_appointment["provider_name"]
+                    recall_provider_info = RecallsPatientProviderInfo(
+                        provider_id=provider_id,
+                        provider_name=provider_name,
+                        upcoming_appointment=True,
+                    )
 
+                    # memoized/map the provider name associated to `provider_id`.
                     provider_names_map.update(
                         {
                             next_upcoming_appointment["provider_id"]: provider_name,
@@ -243,11 +250,6 @@ async def get_patients_with_procedures(
                                 if provider_id == appointment["provider_id"]:
                                     provider_name = appointment["provider_name"]
                                     provider_name_found = True
-
-                                    # memoized/map the provider name associated to `provider_id`.
-                                    provider_names_map.update(
-                                        {provider_id: provider_name}
-                                    )
                                     break
                         if not provider_name_found:
                             # If the provider name has not been found yet, try to find
@@ -272,28 +274,18 @@ async def get_patients_with_procedures(
                                                 "provider_name"
                                             ]
                                             provider_name_found = True
-
-                                            provider_names_map.update(
-                                                {provider_id: provider_name}
-                                            )
+                                            # Exit `get_patients_response_data` loop as soon
+                                            # as the provider name has been found.
                                             break
-                                if not provider_name_found and _appointments:
-                                    # And continue with appointments history should the
-                                    # provider name hasn't been found yet.
+                                if _appointments:
+                                    # And try in appointments history as well.
                                     for _appointment in _appointments:
                                         if provider_id == _appointment["provider_id"]:
                                             provider_name = _appointment[
                                                 "provider_name"
                                             ]
                                             provider_name_found = True
-
-                                            provider_names_map.update(
-                                                {provider_id: provider_name}
-                                            )
-                                            break
-                                if provider_name_found:
-                                    # Exit `get_patients_response_data` loop as soon
-                                    # as the provider name has been found.
+                                            # End loop.
                                     break
                         if not provider_name_found:
                             # Lastly, if the provided name couldn't be found from the
@@ -304,13 +296,20 @@ async def get_patients_with_procedures(
                             )
                             provider_name = get_provider_response["name"]
 
-                            provider_names_map.update({provider_id: provider_name})
+                        # Generate the required value `provider_info` now that the
+                        # value of `provider_name` has been found.
+                        recall_provider_info = RecallsPatientProviderInfo(
+                            provider_id=provider_id,
+                            provider_name=provider_name,
+                        )
+
+                        provider_names_map.update({provider_id: provider_name})
 
                 matching_patients.append(
                     RecallsPatient.model_validate(
                         {
                             **patient,
-                            "provider_name": provider_name,
+                            "recall_provider_info": recall_provider_info,
                             "new_patient": compute_new_patient_value(patient),
                         }
                     )
