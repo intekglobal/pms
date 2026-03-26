@@ -405,7 +405,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
 
         processed_phone_number = process_phone_number(phone_number, country_code)
         bio: Dict = {
-            "date_of_birth": date_of_birth,
+            "date_of_birth": str(date_of_birth),
             "phone_number": processed_phone_number,
         }
 
