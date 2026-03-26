@@ -89,7 +89,8 @@ class Patient(BasePatient):
     adjustments: Sequence[Dict] | None = None
     appointments: Sequence[BaseAppointment] | None = None
     procedures: Sequence[NexHealthProcedure] | None = None
-    provider_id: int
+    # When a patient record has no provider ID, it's highly likely that it is corrupted.
+    provider_id: int | None
     upcoming_appointments: Sequence[BaseAppointment] | None = Field(
         default=None,
         validation_alias=AliasPath("upcoming_appts"),
