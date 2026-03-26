@@ -188,7 +188,6 @@ async def get_patients_with_procedures(
                 if (max_age and max_age < age) or (min_age and min_age > age):
                     continue
 
-            # TODO: change to a `set` to make sure these values are unique
             matching_procedures: list[NexHealthProcedure] = []
 
             for procedure in procedures:
@@ -211,8 +210,11 @@ async def get_patients_with_procedures(
 
                         if code >= start_range and code <= end_range:
                             matching_procedures.append(procedure)
+                            # Exit loop as soon as a match has been found.
+                            break
                     elif procedure_code == code:
                         matching_procedures.append(procedure)
+                        break
 
             if matching_procedures:
                 # # Provider name functionality
