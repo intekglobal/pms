@@ -5,8 +5,8 @@ services:
     env_file:
       - .env.pms
     restart: always
-    # ports:
-    #   - 127.0.0.1:${HOST_PORT:8000}:8000
+    ports:
+      - "${PMS_BIND_URL-127.0.0.1}:${PMS_BIND_PORT-8060}:8000"
 
 networks:
   default:
