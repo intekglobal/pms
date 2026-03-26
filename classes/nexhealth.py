@@ -77,14 +77,14 @@ class NexHealthProcedure(TypedDict):
     appointment_id: int | None
     body_site: Dict | None
     code: str
-    end_date: str | None
+    end_date: str
     fee: NexHealthFee | None
     id: int
     location_id: int
     name: str
     patient_id: int
     provider_id: int
-    start_date: str | None
+    start_date: str
     status: str
     updated_at: str
 
