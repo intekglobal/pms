@@ -1,3 +1,4 @@
+import datetime as dt
 from fastapi import Body
 from fastapi import Depends
 from fastapi import FastAPI
@@ -9,8 +10,10 @@ from typing import Literal
 from typing import Sequence
 
 # Local imports
+from routers import recalls
 from classes.nexhealth import NexHealthAvailability
 from classes.nexhealth import NexHealthGuardianPatient
+from classes.nexhealth import NexHealthProvider
 from classes.nexhealth_sdk import NexHealthSDK
 from classes.pms import Appointment
 from classes.pms import Patient
@@ -29,11 +32,14 @@ from type_definitions.miscellaneous_types import DayType
 from type_definitions.miscellaneous_types import GenderType
 from type_definitions.nexhealth_types import NexHealthIncludeAppointmentQueryValueType
 from type_definitions.nexhealth_types import NexHealthIncludePatientQueryValueType
+from type_definitions.nexhealth_types import NexHealthProviderIncludeQueryType
 from type_definitions.nexhealth_types import NexHealthSubscriptionFeatureType
 
 app = FastAPI()
 bad_request_message = "Bad request; please check your call and then try again"
 local_configuration_error_message = "Configuration type currently not supported"
+
+app.include_router(recalls.router)
 
 
 @app.post("/appointment_slots")
@@ -264,7 +270,9 @@ async def create_availability(
 
 @app.post("/create_patient")
 async def create_patient(
-    date_of_birth: Annotated[str, Body()],
+    date_of_birth: Annotated[
+        dt.date, Body(examples=[dt.date.fromisoformat("1990-09-29")])
+    ],
     first_name: Annotated[str, Body()],
     last_name: Annotated[str, Body()],
     phone_number: Annotated[str, Body()],
@@ -401,10 +409,10 @@ async def get_operatories(
 @app.post("/patients")
 async def get_patients(
     x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
-    appointment_date_end: str | None = None,
-    appointment_date_start: str | None = None,
+    appointment_date_end: dt.date | dt.datetime | None = None,
+    appointment_date_start: dt.date | dt.datetime | None = None,
     configuration: Annotated[RequestConfiguration | None, Body(embed=True)] = None,
-    date_of_birth: str | None = None,
+    date_of_birth: dt.date | None = None,
     email: str | None = None,
     foreign_id: str | None = None,
     inactive: bool = False,
@@ -414,6 +422,7 @@ async def get_patients(
     ] = None,
     location_id: int | None = None,
     name: str | None = None,
+    new_patient: bool | None = None,
     non_patient: bool = False,
     location_strict: bool | None = None,
     page: int | None = None,
@@ -444,6 +453,7 @@ async def get_patients(
         location_id=location_id,
         location_strict=location_strict,
         name=name,
+        new_patient=new_patient,
         non_patient=non_patient,
         page=page,
         per_page=per_page,
@@ -486,6 +496,22 @@ async def get_procedures(
         updated_after=updated_after,
     )
     return procedures
+
+
+@app.get("/provider/{id}")
+async def get_provider(
+    id: int,
+    subdomain: str,
+    x_app_id: Annotated[Literal[True], Depends(validate_app_key)],
+    include: Annotated[
+        Sequence[NexHealthProviderIncludeQueryType] | None,
+        Query(),
+    ] = None,
+) -> NexHealthProvider:
+    get_provider_response = NexHealthSDK.get_provider(
+        id=id, include=include, subdomain=subdomain
+    )
+    return get_provider_response
 
 
 @app.post("/providers")

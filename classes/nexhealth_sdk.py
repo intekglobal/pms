@@ -1,3 +1,4 @@
+import datetime as dt
 import httpx
 import requests
 from fastapi import HTTPException
@@ -14,6 +15,7 @@ from classes.nexhealth import NexHealthAppointment
 from classes.nexhealth import NexHealthAvailability
 from classes.nexhealth import NexHealthGuardianPatient
 from classes.nexhealth import NexHealthPatient
+from classes.nexhealth import NexHealthProvider
 from classes.pms import Appointment
 from classes.request import GetAppointmentSlotsResponse
 from classes.request import GetAppointmentsResponse
@@ -36,6 +38,7 @@ from type_definitions.miscellaneous_types import GenderType
 from type_definitions.nexhealth_types import NexHealthIncludeAppointmentQueryType
 from type_definitions.nexhealth_types import NexHealthIncludePatientQueryType
 from type_definitions.nexhealth_types import NexHealthParentType
+from type_definitions.nexhealth_types import NexHealthProviderIncludeQueryValueType
 from type_definitions.nexhealth_types import NexHealthSubscriptionFeatureType
 
 
@@ -372,7 +375,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         configuration: NexHealthConfig | None = None,
         country_code: str | None = None,
         custom_contact_number: str | None = None,
-        date_of_birth: str,
+        date_of_birth: dt.date,
         email: str,
         first_name: str,
         gender: GenderType | None = None,
@@ -968,10 +971,10 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
     def get_patients(
         cls,
         *,
-        appointment_date_end: str | None = None,
-        appointment_date_start: str | None = None,
+        appointment_date_end: dt.date | dt.datetime | None = None,
+        appointment_date_start: dt.date | dt.datetime | None = None,
         configuration: NexHealthConfig | None = None,
-        date_of_birth: str | None = None,
+        date_of_birth: dt.date | None = None,
         email: str | None = None,
         foreign_id: str | None = None,
         inactive: bool = False,
@@ -979,6 +982,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         location_id: int | None = None,
         location_strict: bool | None = None,  # defaults to `False` in `NexHealth`
         name: str | None = None,
+        new_patient: bool | None = None,  # defaults to `False` in `NexHealth`
         non_patient: bool = False,
         page: int | None = None,
         per_page: int = PER_PAGE,
@@ -1022,6 +1026,8 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             url = f"{url}&location_strict={stringify_bool(location_strict)}"
         if name:
             url = f"{url}&name={name}"
+        if new_patient is not None:
+            url = f"{url}&new_patient={stringify_bool(new_patient)}"
         if page:
             url = f"{url}&page={page}"
         if phone_number:
@@ -1128,6 +1134,48 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             data=nex_health_get_procedures_response_data["data"],
         )
         return nex_health_get_procedures_response
+
+    @classmethod
+    def get_provider(
+        cls,
+        *,
+        id: int,
+        include: NexHealthProviderIncludeQueryValueType | None = None,
+        subdomain: str,
+    ) -> NexHealthProvider:
+        headers = cls.generate_headers()
+        generated_url = cls.__generate_url(
+            path=f"/providers/{id}",
+            subdomain=subdomain,
+        )
+        url = generated_url
+
+        if include:
+            for value in include:
+                url = f"{url}&include[]={value}"
+
+        get_provider_response = requests.get(url, headers=headers)
+        get_provider_response_data = get_provider_response.json()
+        get_provider_response_status_code = get_provider_response.status_code
+
+        if get_provider_response_status_code != 200:
+            print("Error retrieving provider")
+            print(f"Response status code: {get_provider_response_status_code}")
+
+            if get_provider_response_status_code in [400, 401, 403, 404, 500]:
+                if get_provider_response_status_code == 403:
+                    # Because so far `403` errors encountered are related to an incorrect
+                    # `subdomain` value, it is printed to help with troubleshooting
+                    print(f"Subdomain: {subdomain}")
+
+                print(f"Response data: {get_provider_response_data}")
+                print(f"Error: {get_provider_response_data['error'][0]}")
+            else:
+                print(f"Error: {get_provider_response_data}")
+            raise HTTPException(HTTP_400_BAD_REQUEST, "Error retrieving provider")
+
+        print(f"get provider response data: {get_provider_response_data}")
+        return get_provider_response_data["data"]
 
     @classmethod
     def get_providers(

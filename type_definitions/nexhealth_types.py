@@ -17,6 +17,14 @@ type NexHealthIncludePatientQueryValueType = Literal[
 ]
 type NexHealthIncludePatientQueryType = Sequence[NexHealthIncludePatientQueryValueType]
 type NexHealthParentType = Literal["Institution", "Location"]
+type NexHealthProviderIncludeQueryType = Literal[
+    "appointment_types",
+    "availabilities",
+    "locations",
+]
+type NexHealthProviderIncludeQueryValueType = Sequence[
+    NexHealthProviderIncludeQueryType
+]
 type NexHealthSubscriptionFeatureType = Literal[
     "campaigns",
     "enterprise",

@@ -29,15 +29,18 @@ class BaseNexHealthBio(TypedDict):
     gender: NotRequired[GenderType | None]
 
 
-class NexHealthBio(BaseNexHealthBio):
+class NexHealthProviderBio(TypedDict):
+    cell_phone_number: NotRequired[str | None]
+    home_phone_number: NotRequired[str | None]
+    phone_number: str
+
+
+class NexHealthBio(BaseNexHealthBio, NexHealthProviderBio):
     address_line_1: NotRequired[str | None]
     address_line_2: NotRequired[str | None]
-    cell_phone_number: NotRequired[str | None]
     city: NotRequired[str | None]
-    home_phone_number: NotRequired[str | None]
     new_patient: bool
     non_patient: NotRequired[bool | None]
-    phone_number: str
     previous_foreign_id: NotRequired[str | None]
     state: NotRequired[str | None]
     street_address: NotRequired[str | None]
@@ -45,21 +48,24 @@ class NexHealthBio(BaseNexHealthBio):
     zip_code: NotRequired[str | None]
 
 
-class BaseNexHealthPatient(BaseBaseNexHealthPatient):
-    id: int
-    email: str | None
-    middle_name: str | None
-    name: str
+class NexHealthPatientAndProviderCommonProps(BaseBaseNexHealthPatient):
     created_at: str
-    updated_at: str
-    institution_id: int
+    email: str | None
     foreign_id: str | None
     foreign_id_type: str | Literal["nex"]
-    bio: NexHealthBio
+    id: int
     inactive: bool
+    institution_id: int
     last_sync_time: str | None
-    preferred_language: str | None
+    middle_name: str | None
+    name: str
+    updated_at: str
+
+
+class BaseNexHealthPatient(NexHealthPatientAndProviderCommonProps):
+    bio: NexHealthBio
     location_ids: Sequence[int]
+    preferred_language: str | None
 
 
 class NexHealthFee(TypedDict):
@@ -71,14 +77,14 @@ class NexHealthProcedure(TypedDict):
     appointment_id: int | None
     body_site: Dict | None
     code: str
-    end_date: str | None
+    end_date: str
     fee: NexHealthFee | None
     id: int
     location_id: int
     name: str
     patient_id: int
     provider_id: int
-    start_date: str | None
+    start_date: str
     status: str
     updated_at: str
 
@@ -212,8 +218,10 @@ class NexHealthOperatory(TypedDict):
 
 class NexHealthPatient(BaseNexHealthPatient):
     adjustments: NotRequired[Sequence[Dict] | None]
+    appointments: NotRequired[Sequence[BaseNexHealthAppointment] | None]
     procedures: NotRequired[Sequence[NexHealthProcedure] | None]
-    provider_id: int
+    # When a patient record has no provider ID, it's highly likely that it is corrupted.
+    provider_id: int | None
     upcoming_appts: NotRequired[Sequence[BaseNexHealthAppointment] | None]
 
 
@@ -221,26 +229,13 @@ class NexHealthProviderRequestable(TypedDict):
     location_id: int
 
 
-class NexHealthProvider(TypedDict):
+class NexHealthProvider(NexHealthPatientAndProviderCommonProps):
     availabilities: NotRequired[Sequence[NexHealthAvailability] | None]
-    bio: NexHealthBio
-    created_at: str
-    display_name: str
-    email: str
-    first_name: str
-    foreign_id: str
-    foreign_id_type: str
-    id: int
-    inactive: bool
-    institution_id: int
-    last_name: str
-    last_sync_time: str
-    locations: NotRequired[Sequence[NexHealthLocation]]
-    middle_name: str
-    name: str
-    npi: str
+    bio: NexHealthProviderBio
+    display_name: str | None
+    locations: NotRequired[Sequence[NexHealthLocation] | None]
+    npi: str | None
     provider_requestables: Sequence[NexHealthProviderRequestable]
     specialty_code: str
-    state_license: str
-    tin: str
-    updated_at: str
+    state_license: str | None
+    tin: str | None
