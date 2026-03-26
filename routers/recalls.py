@@ -215,8 +215,6 @@ async def get_patients_with_procedures(
                         matching_procedures.append(procedure)
 
             if matching_procedures:
-                patient["procedures"] = matching_procedures
-
                 # # Provider name functionality
                 if upcoming_appointments:
                     # If there are upcoming appointments, use the name of the provider
@@ -274,8 +272,9 @@ async def get_patients_with_procedures(
                                                 "provider_name"
                                             ]
                                             provider_name_found = True
-                                            # Exit `get_patients_response_data` loop as soon
-                                            # as the provider name has been found.
+                                            # Exit `get_patients_response_data` loop
+                                            # as soon as the provider name has been
+                                            # found.
                                             break
                                 if _appointments:
                                     # And try in appointments history as well.
@@ -286,7 +285,7 @@ async def get_patients_with_procedures(
                                             ]
                                             provider_name_found = True
                                             # End loop.
-                                    break
+                                            break
                         if not provider_name_found:
                             # Lastly, if the provided name couldn't be found from the
                             # current patients data, then proceed to obtain it directly
@@ -295,20 +294,24 @@ async def get_patients_with_procedures(
                                 id=provider_id, subdomain=subdomain
                             )
                             provider_name = get_provider_response["name"]
+                            # TODO: handle when provide name is still not there (most
+                            # likely, it is an empty string).
 
-                        # Generate the required value `provider_info` now that the
-                        # value of `provider_name` has been found.
-                        recall_provider_info = RecallsPatientProviderInfo(
-                            provider_id=provider_id,
-                            provider_name=provider_name,
-                        )
-
+                        # Memoize the provider name found for `provider_id`.
                         provider_names_map.update({provider_id: provider_name})
+
+                    # Generate the required value `provider_info` now that the
+                    # value of `provider_name` has been found.
+                    recall_provider_info = RecallsPatientProviderInfo(
+                        provider_id=provider_id,
+                        provider_name=provider_name,
+                    )
 
                 matching_patients.append(
                     RecallsPatient.model_validate(
                         {
                             **patient,
+                            "procedures": matching_procedures,
                             "recall_provider_info": recall_provider_info,
                             "new_patient": compute_new_patient_value(patient),
                         }
