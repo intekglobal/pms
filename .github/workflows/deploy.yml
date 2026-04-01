@@ -179,4 +179,8 @@ jobs:
             docker compose up -d
             checkError "Docker compose up"
 
+            echo "Removing unused images..."
+            docker image prune -af
+            checkError "Docker image prune"
+
             echo "Deployment complete!"
