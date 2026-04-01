@@ -1,6 +1,5 @@
 import datetime as dt
 import httpx
-import requests
 from fastapi import HTTPException
 from starlette.status import HTTP_401_UNAUTHORIZED
 from starlette.status import HTTP_400_BAD_REQUEST
@@ -27,6 +26,7 @@ from classes.request import GetProvidersResponse
 from ehr_abs_class import NexHealthConfig
 from ehr_abs_class import PER_PAGE
 from ehr_abs_class import PMSAbstractBaseClass
+from lib.httpx_sdk import HttpxSDK
 from lib.utilities.miscellaneous_utilities import generate_pms_appointment
 from lib.utilities.miscellaneous_utilities import generate_pms_appointments
 from lib.utilities.miscellaneous_utilities import generate_pms_patient
@@ -63,31 +63,32 @@ def compute_subdomain_and_location_id(
 
 class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
     @staticmethod
-    def __get_access_token() -> str:
+    async def __get_access_token() -> str:
         headers = {
             "Authorization": settings.nexhealth_api_key,
             "Accept": "application/vnd.Nexhealth+json;version=2",
         }
-        access_token_response = requests.post(
-            f"{settings.nexhealth_url}/authenticates",
-            headers=headers,
-        )
+        url = f"{settings.nexhealth_url}/authenticates"
+        httpx_async_client = HttpxSDK.get_async_client()
+        access_token_response = await httpx_async_client.post(url, headers=headers)
 
         if access_token_response.status_code == 401:
             raise HTTPException(
                 status_code=HTTP_401_UNAUTHORIZED,
                 detail="Authorization error.",
             )
-        return access_token_response.json()["data"]["token"]
+
+        token: str = access_token_response.json()["data"]["token"]
+        return token
 
     @classmethod
-    def generate_headers(
+    async def generate_headers(
         cls,
         *,
         beta_api: bool = False,
         post_call: bool = False,
     ) -> Mapping[str, str]:
-        access_token = cls.__get_access_token()
+        access_token = await cls.__get_access_token()
         headers: Dict = {
             "Accept": "application/vnd.Nexhealth+json;version=2",
             "Authorization": f"Bearer {access_token}",
@@ -108,7 +109,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         return url
 
     @classmethod
-    def create_appointment(
+    async def create_appointment(
         cls,
         *,
         appointment_type_id: int | None = None,
@@ -179,7 +180,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         if referrer:
             appt.update({"referrer": referrer})
 
-        headers = cls.generate_headers(post_call=True)
+        headers = await cls.generate_headers(post_call=True)
         data = {
             "appt": appt,
         }
@@ -201,7 +202,10 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         if notify_patient is not None:
             url = f"{url}&notify_patient={stringify_bool(notify_patient)}"
 
-        create_appointment_response = requests.post(url, headers=headers, json=data)
+        httpx_async_client = HttpxSDK.get_async_client()
+        create_appointment_response = await httpx_async_client.post(
+            url, headers=headers, json=data
+        )
         create_appointment_response_data = create_appointment_response.json()
         create_appointment_response_status_code = (
             create_appointment_response.status_code
@@ -231,7 +235,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         return appointment
 
     @classmethod
-    def create_appointment_type(
+    async def create_appointment_type(
         cls,
         *,
         bookable_online=True,
@@ -243,7 +247,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         parent_type: NexHealthParentType | None = None,
         subdomain: str,
     ):
-        headers = cls.generate_headers(post_call=True)
+        headers = await cls.generate_headers(post_call=True)
         generated_url = cls.__generate_url(
             path="/appointment_types", subdomain=subdomain
         )
@@ -268,7 +272,8 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
                 }
             )
 
-        create_appointment_type_response = requests.post(
+        httpx_async_client = HttpxSDK.get_async_client()
+        create_appointment_type_response = await httpx_async_client.post(
             generated_url, headers=headers, json=data
         )
         create_appointment_type_response_data = create_appointment_type_response.json()
@@ -298,7 +303,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         return create_appointment_type_response_data["data"]
 
     @classmethod
-    def create_availability(
+    async def create_availability(
         cls,
         *,
         active: bool | None = None,  # Defaults to `True` in Nexhealth
@@ -321,7 +326,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             print("Error: `location_id` and/or `subdomain` missing")
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating availability")
 
-        headers = cls.generate_headers(post_call=True)
+        headers = await cls.generate_headers(post_call=True)
         generated_url = cls.__generate_url(
             location_id=c_location_id,
             path="/availabilities",
@@ -343,7 +348,8 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         if specific_date:
             availability.update({"specific_date": specific_date})
 
-        create_availability_response = requests.post(
+        httpx_async_client = HttpxSDK.get_async_client()
+        create_availability_response = await httpx_async_client.post(
             generated_url, headers=headers, json=data
         )
         create_availability_response_data = create_availability_response.json()
@@ -365,7 +371,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         return create_availability_response_data["data"]
 
     @classmethod
-    def create_patient(
+    async def create_patient(
         cls,
         *,
         address_line_1: str | None = None,
@@ -454,7 +460,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         if zip_code:
             bio.update({"zip_code": zip_code})
 
-        headers = cls.generate_headers(post_call=True)
+        headers = await cls.generate_headers(post_call=True)
         data = {
             "patient": {
                 "email": email,
@@ -471,7 +477,8 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             path="/patients",
             subdomain=c_subdomain,
         )
-        create_patient_response = requests.post(
+        httpx_async_client = HttpxSDK.get_async_client()
+        create_patient_response = await httpx_async_client.post(
             generated_url, json=data, headers=headers
         )
         create_patient_response_data = create_patient_response.json()
@@ -504,14 +511,14 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         return patient
 
     @classmethod
-    def get_appointment(
+    async def get_appointment(
         cls,
         *,
         id: int,
         include: Sequence[Literal["patient"]] | None = None,
         subdomain: str,
     ):
-        headers = cls.generate_headers()
+        headers = await cls.generate_headers()
         generated_url = cls.__generate_url(
             path=f"/appointments/{id}", subdomain=subdomain
         )
@@ -521,7 +528,10 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             for value in include:
                 url = f"{url}&include[]={value}"
 
-        get_appointment_response = requests.get(generated_url, headers=headers)
+        httpx_async_client = HttpxSDK.get_async_client()
+        get_appointment_response = await httpx_async_client.get(
+            generated_url, headers=headers
+        )
         get_appointment_response_data = get_appointment_response.json()
         get_appointment_response_status_code = get_appointment_response.status_code
 
@@ -539,7 +549,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         return get_appointment_response_data["data"]
 
     @classmethod
-    def get_appointment_slots(
+    async def get_appointment_slots(
         cls,
         *,
         appointment_type_id: int | None = None,
@@ -565,7 +575,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
                 HTTP_400_BAD_REQUEST, "Error retrieving appointment slots"
             )
 
-        headers = cls.generate_headers()
+        headers = await cls.generate_headers()
         generated_url = cls.__generate_url(
             path="/appointment_slots", subdomain=c_subdomain
         )
@@ -588,7 +598,10 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         if slot_length:
             url = f"{url}&slot_length={slot_length}"
 
-        get_appointment_slots_response = requests.get(url, headers=headers)
+        httpx_async_client = HttpxSDK.get_async_client()
+        get_appointment_slots_response = await httpx_async_client.get(
+            url, headers=headers
+        )
         get_appointment_slots_response_data = get_appointment_slots_response.json()
         get_appointment_slots_response_status_code = (
             get_appointment_slots_response.status_code
@@ -613,7 +626,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         return get_appointment_slots_response_instance
 
     @classmethod
-    def get_appointments(
+    async def get_appointments(
         cls,
         *,
         appointment_type_id: int | None = None,
@@ -645,7 +658,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             print("Error: `location_id` and/or `subdomain` missing")
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error retrieving appointments")
 
-        headers = cls.generate_headers()
+        headers = await cls.generate_headers()
         generated_url = cls.__generate_url(
             location_id=c_location_id,
             path="/appointments",
@@ -683,7 +696,8 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         if updated_since:
             url = f"{url}&updated_since={updated_since}"
 
-        get_appointments_response = requests.get(url, headers=headers)
+        httpx_async_client = HttpxSDK.get_async_client()
+        get_appointments_response = await httpx_async_client.get(url, headers=headers)
         get_appointments_response_data = get_appointments_response.json()
         get_appointments_response_status_code = get_appointments_response.status_code
 
@@ -723,14 +737,14 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         )
 
     @classmethod
-    def get_appointment_descriptors(
+    async def get_appointment_descriptors(
         cls,
         *,
         appointment_id: int,
         descriptor_type: str | None = None,
         subdomain: str,
     ):
-        headers = cls.generate_headers()
+        headers = await cls.generate_headers()
         generated_url = cls.__generate_url(
             path=f"/appointments/{appointment_id}/appointment_descriptors",
             subdomain=subdomain,
@@ -740,7 +754,10 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             if descriptor_type
             else generated_url
         )
-        get_appointment_descriptors_response = requests.get(url, headers=headers)
+        httpx_async_client = HttpxSDK.get_async_client()
+        get_appointment_descriptors_response = await httpx_async_client.get(
+            url, headers=headers
+        )
         get_appointment_descriptors_response_data = (
             get_appointment_descriptors_response.json()
         )
@@ -775,14 +792,14 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         return get_appointment_descriptors_response_data["data"]
 
     @classmethod
-    def get_appointment_types(
+    async def get_appointment_types(
         cls,
         *,
         include: Sequence[Literal["descriptors"]] | None = None,
         location_id: int,
         subdomain: str,
     ):
-        headers = cls.generate_headers()
+        headers = await cls.generate_headers()
         generated_url = cls.__generate_url(
             location_id=location_id,
             path="/appointment_types",
@@ -794,7 +811,10 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             for value in include:
                 url = f"{url}&include[]={value}"
 
-        get_appointment_types_response = requests.get(url, headers=headers)
+        httpx_async_client = HttpxSDK.get_async_client()
+        get_appointment_types_response = await httpx_async_client.get(
+            url, headers=headers
+        )
         get_appointment_types_response_data = get_appointment_types_response.json()
         get_appointment_types_response_status_code = (
             get_appointment_types_response.status_code
@@ -816,7 +836,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         return get_appointment_types_response_data["data"]
 
     @classmethod
-    def get_location_appointment_descriptors(
+    async def get_location_appointment_descriptors(
         cls, location_id: int, descriptor_type: str | None = None
     ):
         url = (
@@ -826,8 +846,11 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         if descriptor_type:
             url = f"{url}?descriptor_type={descriptor_type}"
 
-        headers = cls.generate_headers()
-        location_appointment_descriptors_response = requests.get(url, headers=headers)
+        headers = await cls.generate_headers()
+        httpx_async_client = HttpxSDK.get_async_client()
+        location_appointment_descriptors_response = await httpx_async_client.get(
+            url, headers=headers
+        )
         location_appointment_descriptors_response_data = (
             location_appointment_descriptors_response.json()
         )
@@ -850,7 +873,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         return location_appointment_descriptors_response_data["data"]
 
     @classmethod
-    def get_locations(
+    async def get_locations(
         cls,
         *,
         configuration: NexHealthConfig | None = None,
@@ -864,7 +887,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             if subdomain
             else configuration.subdomain if configuration else None
         )
-        headers = cls.generate_headers()
+        headers = await cls.generate_headers()
         querystring_initiated = False
         url = f"{settings.nexhealth_url}/locations"
 
@@ -880,7 +903,8 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         if c_subdomain:
             url = f"{url}{'&' if querystring_initiated else '?'}subdomain={c_subdomain}"
 
-        get_locations_response = requests.get(url, headers=headers)
+        httpx_async_client = HttpxSDK.get_async_client()
+        get_locations_response = await httpx_async_client.get(url, headers=headers)
         get_locations_response_data = get_locations_response.json()
         get_locations_response_status_code = get_locations_response.status_code
 
@@ -903,7 +927,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         return get_locations_response_instance
 
     @classmethod
-    def get_operatories(
+    async def get_operatories(
         cls,
         *,
         configuration: NexHealthConfig | None = None,
@@ -919,7 +943,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             print("Error: `location_id` and/or `subdomain` missing")
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error retrieving operatories")
 
-        headers = cls.generate_headers()
+        headers = await cls.generate_headers()
         generated_url = cls.__generate_url(
             location_id=c_location_id,
             path="/operatories",
@@ -930,7 +954,8 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         if search_name:
             url = f"{url}&search_name={search_name}"
 
-        get_operatories_response = requests.get(url, headers=headers)
+        httpx_async_client = HttpxSDK.get_async_client()
+        get_operatories_response = await httpx_async_client.get(url, headers=headers)
         get_operatories_response_data = get_operatories_response.json()
         get_operatories_response_status_code = get_operatories_response.status_code
 
@@ -954,7 +979,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         return get_operatories_response_instance
 
     @classmethod
-    def get_patients(
+    async def get_patients(
         cls,
         *,
         appointment_date_end: dt.date | dt.datetime | None = None,
@@ -985,7 +1010,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             print("Error: `location_id` and/or `subdomain` missing")
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error retrieving patients.")
 
-        headers = cls.generate_headers()
+        headers = await cls.generate_headers()
         generated_url = cls.__generate_url(
             location_id=c_location_id,
             path="/patients",
@@ -1021,7 +1046,8 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         if updated_since:
             url = f"{url}&updated_since={updated_since}"
 
-        fetch_patients_response = requests.get(url, headers=headers)
+        httpx_async_client = HttpxSDK.get_async_client()
+        fetch_patients_response = await httpx_async_client.get(url, headers=headers)
         fetch_patients_response_status_code = fetch_patients_response.status_code
         fetch_patients_response_data = fetch_patients_response.json()
 
@@ -1055,7 +1081,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         )
 
     @classmethod
-    def get_procedures(
+    async def get_procedures(
         cls,
         *,
         appointment_id: int | None = None,
@@ -1075,7 +1101,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             print("Error: `location_id` and/or `subdomain` missing")
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating patient")
 
-        headers = cls.generate_headers()
+        headers = await cls.generate_headers()
         url = f"{settings.nexhealth_url}/procedures"
         params = {
             "subdomain": c_subdomain,
@@ -1096,40 +1122,52 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             params["updated_after"] = updated_after
 
         try:
-            with httpx.Client() as client:
-                response = client.get(url=url, params=params, headers=headers)
-                response.raise_for_status()
-                nex_health_get_procedures_response_data = response.json()
-        except httpx.HTTPStatusError as exc:
-            print(
-                f"HTTP error occurred: {exc.response.status_code} - {exc.response.text}"
+            httpx_async_client = HttpxSDK.get_async_client()
+            get_procedures_response = await httpx_async_client.get(
+                url=url, params=params, headers=headers
             )
+            get_procedures_response.raise_for_status()
+            get_procedures_response_data = get_procedures_response.json()
+            get_procedures_response_instance = GetProceduresResponse(
+                count=get_procedures_response_data["count"],
+                data=get_procedures_response_data["data"],
+            )
+            return get_procedures_response_instance
+        except httpx.HTTPStatusError as exc:
+            response_status_code = get_procedures_response.status_code
+            response_data = exc.response.json()
+
+            print("Error retrieving procedures.")
+            print(f"Response status code: {response_status_code}")
+
+            if response_status_code in [400, 401, 403, 404, 500]:
+                if response_status_code == 403:
+                    print(f"Provided subdomain: {c_subdomain}")
+
+                print(f"Response data: {response_data}")
+                print(f"Error: {response_data['error'][0]}")
+            else:
+                print(f"Error: {response_data}")
             raise HTTPException(
-                status_code=exc.response.status_code,
-                detail=f"Error retrieving procedures: {exc.response.text}",
+                status_code=HTTP_400_BAD_REQUEST,
+                detail="Error retrieving procedures",
             )
         except Exception as exc:
             print(f"Unexpected error occurred: {exc}")
             raise HTTPException(
                 status_code=HTTP_400_BAD_REQUEST,
-                detail=f"Unexpected error retrieving procedures: {exc}",
+                detail="Unexpected error retrieving procedures",
             )
 
-        nex_health_get_procedures_response = GetProceduresResponse(
-            count=nex_health_get_procedures_response_data["count"],
-            data=nex_health_get_procedures_response_data["data"],
-        )
-        return nex_health_get_procedures_response
-
     @classmethod
-    def get_provider(
+    async def get_provider(
         cls,
         *,
         id: int,
         include: NexHealthProviderIncludeQueryValueType | None = None,
         subdomain: str,
     ) -> NexHealthProvider:
-        headers = cls.generate_headers()
+        headers = await cls.generate_headers()
         generated_url = cls.__generate_url(
             path=f"/providers/{id}",
             subdomain=subdomain,
@@ -1140,7 +1178,8 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             for value in include:
                 url = f"{url}&include[]={value}"
 
-        get_provider_response = requests.get(url, headers=headers)
+        httpx_async_client = HttpxSDK.get_async_client()
+        get_provider_response = await httpx_async_client.get(url, headers=headers)
         get_provider_response_data = get_provider_response.json()
         get_provider_response_status_code = get_provider_response.status_code
 
@@ -1164,7 +1203,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         return get_provider_response_data["data"]
 
     @classmethod
-    def get_providers(
+    async def get_providers(
         cls,
         *,
         configuration: NexHealthConfig | None = None,
@@ -1181,7 +1220,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             print("Error: `location_id` and/or `subdomain` missing")
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error retrieving providers")
 
-        headers = cls.generate_headers()
+        headers = await cls.generate_headers()
         generated_url = cls.__generate_url(
             location_id=c_location_id,
             path="/providers",
@@ -1192,7 +1231,8 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         if requestable is not None:
             url = f"{url}&requestable={stringify_bool(requestable)}"
 
-        get_providers_response = requests.get(url, headers=headers)
+        httpx_async_client = HttpxSDK.get_async_client()
+        get_providers_response = await httpx_async_client.get(url, headers=headers)
         get_providers_response_data = get_providers_response.json()
         get_providers_response_status_code = get_providers_response.status_code
 
@@ -1219,7 +1259,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         return get_providers_response_instance
 
     @classmethod
-    def patch_appointment(
+    async def patch_appointment(
         cls,
         *,
         cancel: bool | None = None,
@@ -1241,7 +1281,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             print("Error: `subdomain` missing")
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error processing appointment")
 
-        headers = cls.generate_headers(post_call=True)
+        headers = await cls.generate_headers(post_call=True)
         generated_url = cls.__generate_url(
             path=f"/appointments/{id}", subdomain=c_subdomain
         )
@@ -1267,7 +1307,8 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         data = {
             "appt": appt,
         }
-        patch_appointment_response = requests.patch(
+        httpx_async_client = HttpxSDK.get_async_client()
+        patch_appointment_response = await httpx_async_client.patch(
             generated_url, headers=headers, json=data
         )
         patch_appointment_response_data = patch_appointment_response.json()

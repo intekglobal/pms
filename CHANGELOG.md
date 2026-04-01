@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## V0.4.0 — 2026-04-01
+
+- Features:
+  - `httpx`:
+    - Migrate the application from using `requests` to `httpx` to start making asynchronous calls for the sake of application performance.
+
 ## V0.3.0 - 2026-03-27
 
 - Deployment:
