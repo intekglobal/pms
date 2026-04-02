@@ -1,4 +1,6 @@
 import datetime as dt
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from fastapi import Body
 from fastapi import Depends
 from fastapi import FastAPI
@@ -15,6 +17,7 @@ from classes.nexhealth import NexHealthAvailability
 from classes.nexhealth import NexHealthGuardianPatient
 from classes.nexhealth import NexHealthProvider
 from classes.nexhealth_sdk import NexHealthSDK
+from lib.httpx_sdk import HttpxSDK
 from classes.pms import Appointment
 from classes.pms import Patient
 from classes.request import GetAppointmentSlotsResponse
@@ -35,7 +38,17 @@ from type_definitions.nexhealth_types import NexHealthIncludePatientQueryValueTy
 from type_definitions.nexhealth_types import NexHealthProviderIncludeQueryType
 from type_definitions.nexhealth_types import NexHealthSubscriptionFeatureType
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+    # Calling `get_async_client` will instantiate/initialize `HttpxSDK`'s `httpx`
+    # async client.
+    HttpxSDK.get_async_client()
+    yield
+    await HttpxSDK.close_async_client()
+
+
+app = FastAPI(lifespan=lifespan)
 bad_request_message = "Bad request; please check your call and then try again"
 local_configuration_error_message = "Configuration type currently not supported"
 
@@ -66,7 +79,7 @@ async def get_appointment_slots(
     else:
         params = None
 
-    get_appointment_slots_response = NexHealthSDK.get_appointment_slots(
+    get_appointment_slots_response = await NexHealthSDK.get_appointment_slots(
         appointment_type_id=appointment_type_id,
         configuration=params,
         days=days,
@@ -118,7 +131,7 @@ async def get_appointments(
     else:
         params = None
 
-    get_appointments_response = NexHealthSDK.get_appointments(
+    get_appointments_response = await NexHealthSDK.get_appointments(
         appointment_type_id=appointment_type_id,
         cancelled=cancelled,
         configuration=params,
@@ -159,7 +172,7 @@ async def cancel_appointment(
     else:
         params = None
 
-    patch_appointment_response = NexHealthSDK.patch_appointment(
+    patch_appointment_response = await NexHealthSDK.patch_appointment(
         cancel=True,
         configuration=params,
         id=id,
@@ -208,7 +221,7 @@ async def create_appointment(
             bad_request_message,
         )
 
-    appointment_result = NexHealthSDK.create_appointment(
+    appointment_result = await NexHealthSDK.create_appointment(
         appointment_type_id=appointment_type_id,
         configuration=params,
         descriptor_ids=descriptor_ids,
@@ -253,7 +266,7 @@ async def create_availability(
     else:
         params = None
 
-    create_availability_response = NexHealthSDK.create_availability(
+    create_availability_response = await NexHealthSDK.create_availability(
         appointment_type_ids=appointment_type_ids,
         begin_time=begin_time,
         configuration=params,
@@ -328,7 +341,7 @@ async def create_patient(
             bad_request_message,
         )
 
-    create_patient_response = NexHealthSDK.create_patient(
+    create_patient_response = await NexHealthSDK.create_patient(
         address_line_1=address_line_1,
         address_line_2=address_line_2,
         cell_phone_number=cell_phone_number,
@@ -370,7 +383,7 @@ async def get_locations(
     inactive: bool | None = None,
     subdomain: str | None = None,
 ) -> GetLocationsResponse:
-    get_locations_response = NexHealthSDK.get_locations(
+    get_locations_response = await NexHealthSDK.get_locations(
         configuration=configuration.params if configuration else None,
         filter_by_subscription_feature=filter_by_subscription_feature,
         foreign_id=foreign_id,
@@ -397,7 +410,7 @@ async def get_operatories(
     else:
         params = None
 
-    get_operatories_response = NexHealthSDK.get_operatories(
+    get_operatories_response = await NexHealthSDK.get_operatories(
         configuration=params,
         location_id=location_id,
         search_name=search_name,
@@ -441,7 +454,7 @@ async def get_patients(
     else:
         params = None
 
-    get_patients_response = NexHealthSDK.get_patients(
+    get_patients_response = await NexHealthSDK.get_patients(
         appointment_date_end=appointment_date_end,
         appointment_date_start=appointment_date_start,
         configuration=params,
@@ -485,7 +498,7 @@ async def get_procedures(
     else:
         params = None
 
-    procedures = NexHealthSDK.get_procedures(
+    procedures = await NexHealthSDK.get_procedures(
         appointment_id=appointment_id,
         configuration=params,
         location_id=location_id,
@@ -508,7 +521,7 @@ async def get_provider(
         Query(),
     ] = None,
 ) -> NexHealthProvider:
-    get_provider_response = NexHealthSDK.get_provider(
+    get_provider_response = await NexHealthSDK.get_provider(
         id=id, include=include, subdomain=subdomain
     )
     return get_provider_response
@@ -530,7 +543,7 @@ async def get_providers(
     else:
         params = None
 
-    get_providers_response = NexHealthSDK.get_providers(
+    get_providers_response = await NexHealthSDK.get_providers(
         configuration=params, location_id=location_id, subdomain=subdomain
     )
     return get_providers_response
@@ -572,12 +585,12 @@ async def reschedule_appointment(
         print("Error: No provider ID was provided")
         raise HTTPException(HTTP_400_BAD_REQUEST, bad_request_message)
 
-    patch_appointment_response = NexHealthSDK.patch_appointment(
+    patch_appointment_response = await NexHealthSDK.patch_appointment(
         cancel=True,
         configuration=params,
         id=id,
     )
-    create_appointment_response = NexHealthSDK.create_appointment(
+    create_appointment_response = await NexHealthSDK.create_appointment(
         appointment_type_id=appointment_type_id,
         configuration=params,
         descriptor_ids=descriptor_ids,

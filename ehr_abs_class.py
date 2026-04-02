@@ -17,7 +17,7 @@ type NexHealthConfig = NexHealthParams
 class PMSAbstractBaseClass[C = LocalConfig | NexHealthConfig](metaclass=ABCMeta):
     @classmethod
     @abstractmethod
-    def get_patients(
+    async def get_patients(
         cls,
         *,
         configuration: C,

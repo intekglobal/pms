@@ -75,7 +75,7 @@ async def get_patients_with_procedures(
 
     while True:
         current_page = current_page + 1
-        get_patients_response = NexHealthSDK.get_patients(
+        get_patients_response = await NexHealthSDK.get_patients(
             appointment_date_end=today,
             page=current_page,
             include=["procedures", "upcoming_appts"],
@@ -292,7 +292,7 @@ async def get_patients_with_procedures(
                             # Lastly, if the provided name couldn't be found from the
                             # current patients data, then proceed to obtain it directly
                             # from `NexHealth`.
-                            get_provider_response = NexHealthSDK.get_provider(
+                            get_provider_response = await NexHealthSDK.get_provider(
                                 id=provider_id, subdomain=subdomain
                             )
                             provider_name = get_provider_response["name"]
