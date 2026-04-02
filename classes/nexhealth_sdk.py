@@ -501,7 +501,9 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
                     "error"
                 ][0]
 
-                if create_patient_response_data_error.startswith(
+                if create_patient_response_status_code == 403:
+                    print(f"Provided subdomain: {c_subdomain}")
+                elif create_patient_response_data_error.startswith(
                     "A patient with that information already exists"
                 ):
                     # Set the error message as to indicate that the patient already
