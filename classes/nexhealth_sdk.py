@@ -488,6 +488,8 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             print("Error creating patient")
             print(f"Response status code: {create_patient_response_status_code}")
 
+            error_message = "Error creating patient"
+
             if create_patient_response_status_code in [
                 400,
                 401,
@@ -495,12 +497,23 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
                 404,
                 500,
             ]:
+                create_patient_response_data_error: str = create_patient_response_data[
+                    "error"
+                ][0]
+
+                if create_patient_response_data_error.startswith(
+                    "A patient with that information already exists"
+                ):
+                    # Set the error message as to indicate that the patient already
+                    # exists, so that clients' code can handle such a case.
+                    error_message = "Patient already exists"
+
                 print(f"Response data: {create_patient_response_data}")
-                print(f"Error: {create_patient_response_data['error'][0]}")
+                print(f"Error: {create_patient_response_data_error}")
             else:
                 print(f"Error: {create_patient_response_data}")
             raise HTTPException(
-                detail="Error creating patient",
+                detail=error_message,
                 status_code=HTTP_400_BAD_REQUEST,
             )
 
