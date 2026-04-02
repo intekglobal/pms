@@ -1,5 +1,6 @@
 import datetime as dt
 import httpx
+from collections.abc import MutableMapping
 from fastapi import HTTPException
 from starlette.status import HTTP_401_UNAUTHORIZED
 from starlette.status import HTTP_400_BAD_REQUEST
@@ -16,6 +17,7 @@ from classes.nexhealth import NexHealthGuardianPatient
 from classes.nexhealth import NexHealthPatient
 from classes.nexhealth import NexHealthProvider
 from classes.pms import Appointment
+from classes.pms import Patient
 from classes.request import GetAppointmentSlotsResponse
 from classes.request import GetAppointmentsResponse
 from classes.request import GetLocationsResponse
@@ -400,7 +402,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         weight: int | None = None,
         work_phone_number: str | None = None,
         zip_code: str | None = None,
-    ):
+    ) -> Patient:
         c_location_id, c_subdomain = compute_subdomain_and_location_id(
             configuration=configuration, location_id=location_id, subdomain=subdomain
         )
@@ -410,7 +412,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating patient")
 
         processed_phone_number = process_phone_number(phone_number, country_code)
-        bio: Dict = {
+        bio: MutableMapping[str, int | str] = {
             "date_of_birth": str(date_of_birth),
             "phone_number": processed_phone_number,
         }
