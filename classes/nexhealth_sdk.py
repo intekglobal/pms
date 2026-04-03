@@ -521,8 +521,6 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
                 status_code=HTTP_400_BAD_REQUEST,
             )
 
-        print(f"create patient response data: {create_patient_response_data}")
-
         user_data: BaseNexHealthPatient = create_patient_response_data["data"]["user"]
         patient = generate_pms_patient({"provider_id": provider_id, **user_data})
         return patient
