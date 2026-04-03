@@ -1,5 +1,6 @@
 import datetime as dt
 import httpx
+from collections.abc import MutableMapping
 from fastapi import HTTPException
 from starlette.status import HTTP_401_UNAUTHORIZED
 from starlette.status import HTTP_400_BAD_REQUEST
@@ -16,6 +17,7 @@ from classes.nexhealth import NexHealthGuardianPatient
 from classes.nexhealth import NexHealthPatient
 from classes.nexhealth import NexHealthProvider
 from classes.pms import Appointment
+from classes.pms import Patient
 from classes.request import GetAppointmentSlotsResponse
 from classes.request import GetAppointmentsResponse
 from classes.request import GetLocationsResponse
@@ -400,7 +402,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
         weight: int | None = None,
         work_phone_number: str | None = None,
         zip_code: str | None = None,
-    ):
+    ) -> Patient:
         c_location_id, c_subdomain = compute_subdomain_and_location_id(
             configuration=configuration, location_id=location_id, subdomain=subdomain
         )
@@ -410,7 +412,7 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             raise HTTPException(HTTP_400_BAD_REQUEST, "Error creating patient")
 
         processed_phone_number = process_phone_number(phone_number, country_code)
-        bio: Dict = {
+        bio: MutableMapping[str, int | str] = {
             "date_of_birth": str(date_of_birth),
             "phone_number": processed_phone_number,
         }
@@ -488,6 +490,8 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
             print("Error creating patient")
             print(f"Response status code: {create_patient_response_status_code}")
 
+            error_message = "Error creating patient"
+
             if create_patient_response_status_code in [
                 400,
                 401,
@@ -495,16 +499,27 @@ class NexHealthSDK(PMSAbstractBaseClass[NexHealthConfig | None]):
                 404,
                 500,
             ]:
+                create_patient_response_data_error: str = create_patient_response_data[
+                    "error"
+                ][0]
+
+                if create_patient_response_status_code == 403:
+                    print(f"Provided subdomain: {c_subdomain}")
+                elif create_patient_response_data_error.startswith(
+                    "A patient with that information already exists"
+                ):
+                    # Set the error message as to indicate that the patient already
+                    # exists, so that clients' code can handle such a case.
+                    error_message = "Patient already exists"
+
                 print(f"Response data: {create_patient_response_data}")
-                print(f"Error: {create_patient_response_data['error'][0]}")
+                print(f"Error: {create_patient_response_data_error}")
             else:
                 print(f"Error: {create_patient_response_data}")
             raise HTTPException(
-                detail="Error creating patient",
+                detail=error_message,
                 status_code=HTTP_400_BAD_REQUEST,
             )
-
-        print(f"create patient response data: {create_patient_response_data}")
 
         user_data: BaseNexHealthPatient = create_patient_response_data["data"]["user"]
         patient = generate_pms_patient({"provider_id": provider_id, **user_data})
